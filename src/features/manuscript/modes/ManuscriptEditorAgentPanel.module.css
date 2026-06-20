@@ -1,0 +1,258 @@
+.panel {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.contextCard,
+.suggestionCard,
+.thread,
+.composer {
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-card);
+}
+
+.contextCard {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.titleRow strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ck-foreground);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contextText {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.selection {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  border-left: 3px solid var(--ck-primary);
+  border-radius: 0 var(--ck-radius-sm) var(--ck-radius-sm) 0;
+  padding: 8px 10px;
+  background: var(--ck-source-active, #eef0fb);
+}
+
+.selectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.selectionText {
+  max-height: 116px;
+  overflow-y: auto;
+  margin: 0;
+  color: var(--ck-foreground);
+  font-family: var(--ck-font-serif);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  scrollbar-width: thin;
+}
+
+.selectionHint {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.suggestions {
+  display: grid;
+  gap: 10px;
+}
+
+.suggestionCard {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.diff {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.remove,
+.add {
+  border-radius: var(--ck-radius-xs);
+  padding: 5px 7px;
+}
+
+.remove {
+  background: var(--ck-color-error, #fee2e2);
+  color: var(--ck-color-error-foreground, #b91c1c);
+}
+
+.add {
+  background: var(--ck-color-success, #dcfce7);
+  color: var(--ck-color-success-foreground, #15803d);
+}
+
+.applyButton,
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  cursor: pointer;
+}
+
+.applyButton {
+  min-height: 32px;
+  gap: 7px;
+  padding: 0 12px;
+  background: var(--ck-primary);
+  color: var(--ck-primary-foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.suggestionTitle {
+  color: var(--ck-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.rejectButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ck-border-strong);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.rejectButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.thread {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 8px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.message {
+  display: grid;
+  gap: 4px;
+  border-radius: var(--ck-radius-sm);
+  padding: 8px 10px;
+  background: var(--ck-background);
+}
+
+.message[data-role='user'] {
+  margin-left: 28px;
+  background: var(--ck-user-bubble, #f3f3f1);
+}
+
+.message span {
+  color: var(--ck-muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.message p {
+  margin: 0;
+  color: var(--ck-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 8px;
+  padding: 10px;
+}
+
+.composer input {
+  min-width: 0;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  font: inherit;
+  font-size: 13px;
+}
+
+.sendButton {
+  width: 40px;
+  height: 40px;
+  background: var(--ck-ink);
+  color: var(--ck-ink-foreground);
+}
+
+.sendButton:disabled,
+.applyButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.notice {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+}

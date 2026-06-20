@@ -1,0 +1,135 @@
+.readerCore {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  background: var(--ck-reader);
+  color: var(--ck-reader-foreground);
+}
+
+.readerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 22px 30px 18px;
+}
+
+.readerHeader p {
+  margin: 0 0 8px;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.readerHeader h2 {
+  margin: 0;
+  font-family: var(--ck-font-serif);
+  font-size: 23px;
+  line-height: 1.2;
+}
+
+.closeButton {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--ck-muted);
+  color: var(--ck-foreground);
+}
+
+.readerBody {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 24px 32px 40px;
+  scrollbar-color: #c5c5c2 transparent;
+  scrollbar-width: thin;
+}
+
+.paragraph {
+  margin: 0 0 16px;
+  font-family: var(--ck-font-serif);
+  font-size: 18px;
+  line-height: 1.48;
+}
+
+.paragraphButton {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.paragraphButton:hover {
+  color: var(--ck-foreground-strong);
+}
+
+.heading {
+  margin: 0 0 18px;
+  font-family: var(--ck-font-serif);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.highlight {
+  border-radius: var(--ck-radius-xs);
+  padding: 2px 4px;
+  background: var(--ck-highlight);
+  color: var(--ck-highlight-foreground);
+}
+
+.state {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  line-height: 1.5;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--ck-border);
+  padding: 14px 30px;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.footer strong {
+  color: var(--ck-foreground);
+}
+
+@media (max-width: 700px) {
+  .readerHeader {
+    padding: 18px 20px 14px;
+  }
+
+  .readerHeader h2 {
+    font-size: 17px;
+  }
+
+  .readerBody {
+    padding: 18px 20px 34px;
+  }
+
+  .paragraph {
+    font-size: 17px;
+  }
+}

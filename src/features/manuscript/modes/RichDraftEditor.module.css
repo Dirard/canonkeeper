@@ -1,0 +1,71 @@
+.shell {
+  width: min(660px, 100%);
+}
+
+.editorRoot {
+  --draft-font-size: 18px;
+  width: 100%;
+}
+
+.editorRoot :global(.ProseMirror) {
+  min-height: 260px;
+  outline: none;
+  color: var(--ck-reader-foreground);
+  font-family: var(--ck-font-serif);
+  font-size: var(--draft-font-size);
+  line-height: 1.62;
+}
+
+.editorRoot :global(.ProseMirror p),
+.editorRoot :global(.ProseMirror blockquote),
+.editorRoot :global(.ProseMirror ul),
+.editorRoot :global(.ProseMirror h2) {
+  margin: 0 0 18px;
+}
+
+.editorRoot :global(.ProseMirror h2) {
+  color: var(--ck-foreground-strong);
+  font-size: 1.28em;
+  line-height: 1.22;
+}
+
+.editorRoot :global(.ProseMirror blockquote) {
+  border-left: 3px solid var(--ck-border-strong);
+  padding-left: 16px;
+  color: var(--ck-muted-foreground);
+}
+
+.editorRoot :global(.ProseMirror ul) {
+  padding-left: 22px;
+}
+
+.editorRoot :global(.ProseMirror a) {
+  color: var(--ck-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.editorRoot :global(.ProseMirror hr) {
+  width: 44%;
+  height: 1px;
+  border: 0;
+  margin: 28px auto;
+  background: var(--ck-border);
+}
+
+.editorRoot :global(.is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--ck-subtle-foreground, #767c87);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.hint {
+  margin: 18px 0 0;
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-serif);
+  font-size: var(--draft-font-size);
+  font-style: italic;
+}

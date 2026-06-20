@@ -1,0 +1,119 @@
+.appShell {
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--ck-background);
+  color: var(--ck-foreground);
+}
+
+/* Neutral splitting fallback that matches the app background so lazy route
+   chunks never flash a blank/white frame while loading. */
+.routeFallback {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ck-background);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.header h1,
+.panel h2 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.navButton,
+.activeNav {
+  min-height: 36px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.activeNav {
+  background: var(--ck-ink);
+  color: var(--ck-ink-foreground);
+}
+
+.panel {
+  max-width: 760px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  padding: 24px;
+  background: var(--ck-card);
+}
+
+.routeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.routeGrid div {
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-xs);
+  padding: 12px;
+  background: var(--ck-muted);
+}
+
+.routeGrid dt {
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+}
+
+.routeGrid dd {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
+.copy {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .appShell {
+    padding: 18px;
+  }
+
+  .header {
+    display: block;
+  }
+
+  .nav {
+    justify-content: flex-start;
+    margin-top: 18px;
+  }
+
+  .routeGrid {
+    grid-template-columns: 1fr;
+  }
+}

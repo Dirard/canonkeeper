@@ -1,0 +1,34 @@
+.sectionLabel {
+  margin: 0 0 8px;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.navList {
+  display: grid;
+  gap: 4px;
+}
+
+.navButton,
+.activeNavButton {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  width: 100%;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ck-sidebar-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.activeNavButton {
+  background: var(--ck-sidebar-accent);
+  color: var(--ck-foreground);
+}

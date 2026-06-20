@@ -1,0 +1,127 @@
+.sidebar {
+  display: flex;
+  width: 276px;
+  min-width: 276px;
+  flex-direction: column;
+  gap: 16px;
+  border-right: 1px solid var(--ck-border);
+  padding: 18px;
+  background: var(--ck-sidebar);
+}
+
+/* Below the workspace breakpoint the fixed rail is replaced by the tablet icon
+   rail + mobile drawer (each surface owns those); hide the shared desktop rail. */
+@media (max-width: 1100px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+/* Drawer variant: same content, but fills the mobile drawer (chrome — width,
+   background, padding, header — is supplied by the drawer wrapper). */
+.sidebarDrawer {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.projectButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  gap: 10px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  cursor: pointer;
+}
+
+.projectButton:disabled {
+  cursor: default;
+}
+
+.projectMeta,
+.muted {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.chats {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chatsTitle {
+  margin: 0;
+  color: var(--ck-foreground);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sessionList {
+  display: grid;
+  min-height: 0;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.sessionButton,
+.activeSessionButton {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  width: 100%;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ck-sidebar-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.activeSessionButton {
+  background: var(--ck-sidebar-accent);
+  color: var(--ck-foreground);
+}
+
+.sessionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sessionTitle {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconButton {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--ck-muted);
+  color: var(--ck-foreground);
+}

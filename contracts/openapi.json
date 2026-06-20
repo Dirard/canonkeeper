@@ -1,0 +1,5024 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Canon Keeper API",
+    "version": "0.1.0",
+    "summary": "Frontend/backend contract for the Canon Keeper writer workspace.",
+    "description": "Canonical API contract for the frontend-first Canon Keeper implementation. The contract models the frozen design surfaces: auth, chat workspace, reader, manuscript library, indexing, reader annotations, draft editing, and agent suggestions. The current frontend may use mock data behind this shape until the backend is implemented."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Same-origin application backend"
+    }
+  ],
+  "security": [
+    {
+      "sessionAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, logout, and current user endpoints. Password reset and Google sign-in shown in the UI are frontend placeholders until the backend auth provider is selected."
+    },
+    {
+      "name": "Projects",
+      "description": "Writer projects / sagas."
+    },
+    {
+      "name": "Books",
+      "description": "Books inside a saga, including import, export, and indexing state."
+    },
+    {
+      "name": "Chapters",
+      "description": "Reading and draft chapter content."
+    },
+    {
+      "name": "Annotations",
+      "description": "Reader annotations shown in the notes sidebar: highlights, notes, and bookmarks."
+    },
+    {
+      "name": "Chat",
+      "description": "Agent chat sessions, ordinary LLM streaming, trigger markers, and workspace reader links."
+    },
+    {
+      "name": "Artifacts",
+      "description": "Structured reader reference artifacts referenced from normal assistant text."
+    },
+    {
+      "name": "Reader",
+      "description": "Reader navigation, search, and locators used by chat artifacts and reader annotations."
+    },
+    {
+      "name": "Agent",
+      "description": "Draft assistant suggestions and diff/accept/reject UX."
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "registerUser",
+        "summary": "Create a user account.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created and authenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "loginUser",
+        "summary": "Authenticate with email and password.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "logoutUser",
+        "summary": "Invalidate the current session.",
+        "responses": {
+          "204": {
+            "description": "Session invalidated."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "getCurrentUser",
+        "summary": "Return the authenticated user.",
+        "responses": {
+          "200": {
+            "description": "Current user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "listProjects",
+        "summary": "List projects available to the user.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "createProject",
+        "summary": "Create a new saga project.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}": {
+      "get": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "getProject",
+        "summary": "Get a project shell summary.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "updateProject",
+        "summary": "Rename or update project metadata.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Projects"
+        ],
+        "operationId": "deleteProject",
+        "summary": "Delete a project.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Project deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/books": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "listBooks",
+        "summary": "List books in a project shelf.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Book list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "createBook",
+        "summary": "Create a book inside a project.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created book.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/books/{bookId}": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "getBook",
+        "summary": "Get a book with current indexing status.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Book detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "updateBook",
+        "summary": "Rename or update book metadata.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated book.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "deleteBook",
+        "summary": "Delete a book.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Book deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/import-constraints": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "getImportConstraints",
+        "summary": "Return machine-readable import/dropzone constraints.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Import constraints for frontend validation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportConstraints"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/imports": {
+      "post": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "importBookFile",
+        "summary": "Upload FB2/EPUB and start parsing plus indexing.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportBookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Import accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexingJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/indexing-jobs": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "listIndexingJobs",
+        "summary": "List active or recent indexing jobs for a project.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indexing jobs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexingJobList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/indexing-jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "getIndexingJob",
+        "summary": "Get import/indexing progress.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indexing job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexingJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/indexing-jobs/{jobId}/cancel": {
+      "post": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "cancelIndexingJob",
+        "summary": "Cancel an import/indexing job when the UI exposes a cancel action.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canceled indexing job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexingJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/books/{bookId}/exports": {
+      "post": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "createBookExport",
+        "summary": "Start a book export job.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Export job created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/export-jobs/{exportJobId}": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "operationId": "getExportJob",
+        "summary": "Poll a book export job and retrieve its download URL when ready.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ExportJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportJob"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/books/{bookId}/chapters": {
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "listChapters",
+        "summary": "List chapter structure for a book.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChapterList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "createChapter",
+        "summary": "Create a new chapter.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/BookId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created chapter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chapters/{chapterId}": {
+      "get": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "getChapter",
+        "summary": "Get chapter content for reading or draft editing.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          },
+          {
+            "name": "viewMode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ChapterViewMode"
+            },
+            "description": "Select reading or draft payload without changing the chapter lifecycle state."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "updateChapter",
+        "summary": "Save chapter title, draft body, or ordering metadata.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated chapter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "deleteChapter",
+        "summary": "Delete a chapter.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Chapter deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chapters/{chapterId}/publish": {
+      "post": {
+        "tags": [
+          "Chapters"
+        ],
+        "operationId": "publishChapter",
+        "summary": "Publish the current draft revision into the reader version.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Published chapter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/chapters/{chapterId}/annotations": {
+      "get": {
+        "tags": [
+          "Annotations"
+        ],
+        "operationId": "listChapterAnnotations",
+        "summary": "List reader annotations anchored to a chapter.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reader annotations for chapter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReaderAnnotationList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Annotations"
+        ],
+        "operationId": "createChapterAnnotation",
+        "summary": "Create a highlight, note, or bookmark anchored to a reader selection.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReaderAnnotationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created reader annotation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReaderAnnotation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/annotations/{annotationId}": {
+      "patch": {
+        "tags": [
+          "Annotations"
+        ],
+        "operationId": "updateReaderAnnotation",
+        "summary": "Edit a reader annotation.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AnnotationId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReaderAnnotationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated reader annotation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReaderAnnotation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Annotations"
+        ],
+        "operationId": "deleteReaderAnnotation",
+        "summary": "Delete a reader annotation.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AnnotationId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reader annotation deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/search": {
+      "get": {
+        "tags": [
+          "Reader"
+        ],
+        "operationId": "searchProject",
+        "summary": "Search indexed canon, chapters, reader annotations, and materials.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SearchScope"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results with reader locators.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/chats": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "listChatSessions",
+        "summary": "List chat sessions for the project sidebar.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat sessions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSessionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "createChatSession",
+        "summary": "Create a chat session.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProjectId"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChatSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created chat session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chats/{chatId}": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "getChatSession",
+        "summary": "Get chat metadata.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChatId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSession"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "renameChatSession",
+        "summary": "Rename a chat session.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChatId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateChatSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated chat session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "deleteChatSession",
+        "summary": "Delete a chat session.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChatId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Chat session deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chats/{chatId}/messages": {
+      "get": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "listChatMessages",
+        "summary": "List messages in a chat session.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChatId"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat messages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessageList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "operationId": "sendChatMessage",
+        "summary": "Send a user message and receive an assistant turn, optionally as an OpenAI-style stream.",
+        "description": "When `stream` is true, the response is a normal LLM text/event-stream with text deltas, reasoning/tool-call events, completion, and errors. Domain objects are not streamed as special events. If the assistant creates structured material, it emits a trigger marker in ordinary text, and the client fetches the relevant resource separately.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChatId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChatMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OpenAI-style streaming response. The assistant may include trigger markers in ordinary text, for example `::ck-trigger{kind=\"reader_references\" artifactId=\"...\"}` or `::ck-trigger{kind=\"agent_suggestions_ready\" chapterId=\"...\"}`.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-sent events whose `data:` payloads are JSON objects following the provider-neutral `LlmStreamEvent` vocabulary: text_delta, reasoning_delta, tool_call, tool_result, completed, and error. The completed event includes `assistantMessageId` so the client can persist the final turn without guessing; clients may still refetch `/chats/{chatId}/messages` after completion."
+                },
+                "examples": {
+                  "ordinaryLlmStream": {
+                    "summary": "Provider-neutral ordinary LLM SSE frames.",
+                    "value": "data: {\"type\":\"reasoning_delta\",\"sequence\":1,\"delta\":\"Проверяю главы...\"}\n\ndata: {\"type\":\"tool_call\",\"sequence\":2,\"toolCallId\":\"tool_1\",\"toolName\":\"reader.search\"}\n\ndata: {\"type\":\"tool_result\",\"sequence\":3,\"toolCallId\":\"tool_1\",\"toolName\":\"reader.search\",\"delta\":\"3 фрагмента\"}\n\ndata: {\"type\":\"text_delta\",\"sequence\":4,\"delta\":\"Нашел сцену: ::ck-trigger{kind=\\\"reader_references\\\" artifactId=\\\"artifact_123\\\"}\"}\n\ndata: {\"type\":\"completed\",\"sequence\":5,\"assistantMessageId\":\"msg_asst_123\",\"turnId\":\"turn_123\",\"finishReason\":\"stop\"}\n\n"
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Completed chat turn.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatTurn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/chat-artifacts/{artifactId}": {
+      "get": {
+        "tags": [
+          "Artifacts"
+        ],
+        "operationId": "getChatArtifact",
+        "summary": "Get reader references referenced from assistant text.",
+        "description": "The chat stream itself remains ordinary LLM streaming. The client detects a reader reference trigger in message text and calls this endpoint to fetch formatted reader references. Agent suggestions are separate backend entities and are fetched through the Agent endpoints.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chat artifact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatArtifact"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chapters/{chapterId}/agent-suggestions": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "listAgentSuggestions",
+        "summary": "List draft agent suggestions for a chapter.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AgentSuggestionStatus"
+            }
+          },
+          {
+            "name": "sourceMessageId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          {
+            "name": "batchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Use with `agent_suggestions_ready` trigger to fetch only suggestions created by that assistant turn."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent suggestions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuggestionList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "requestAgentSuggestion",
+        "summary": "Ask the draft agent for a targeted suggestion on a chapter.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ChapterId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestAgentSuggestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agent suggestion created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuggestion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/agent-suggestions/{suggestionId}": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "getAgentSuggestion",
+        "summary": "Get one backend-created agent suggestion.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SuggestionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent suggestion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuggestion"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/agent-suggestions/{suggestionId}/approve": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "approveAgentSuggestion",
+        "summary": "Approve a backend-created agent suggestion.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SuggestionId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveAgentSuggestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Approved suggestion result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuggestionActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/agent-suggestions/{suggestionId}/reject": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "rejectAgentSuggestion",
+        "summary": "Reject a backend-created agent suggestion.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SuggestionId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejected suggestion result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuggestionActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "ck_session",
+        "description": "Provider-neutral same-origin session cookie. The contract intentionally does not expose JWT, refresh-token, or OAuth provider mechanics."
+      }
+    },
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "BookId": {
+        "name": "bookId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "ChapterId": {
+        "name": "chapterId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "AnnotationId": {
+        "name": "annotationId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "ChatId": {
+        "name": "chatId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "SuggestionId": {
+        "name": "suggestionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "JobId": {
+        "name": "jobId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "ExportJobId": {
+        "name": "exportJobId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "ArtifactId": {
+        "name": "artifactId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Id"
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 30
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication is missing or invalid.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Authenticated user does not have access to the requested project, book, chapter, annotation, chat, job, or suggestion.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource was not found.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Resource version conflict or invalid state transition.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Uploaded file is too large.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Uploaded file type is not supported.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Id": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Opaque stable identifier. Implementations may use prefixed IDs such as `book_...`, `chapter_...`, or `paragraph_...`; clients must not parse semantics from the ID string."
+      },
+      "DateTime": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": [
+          "path",
+          "message"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PageMeta": {
+        "type": "object",
+        "required": [
+          "hasMore"
+        ],
+        "properties": {
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "displayName",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "displayName",
+          "email",
+          "password",
+          "acceptedTerms"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "format": "password"
+          },
+          "acceptedTerms": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          },
+          "rememberMe": {
+            "type": "boolean",
+            "default": false,
+            "description": "Visible login checkbox. Backend may use it to choose session duration without exposing token mechanics to the frontend."
+          }
+        }
+      },
+      "AuthSession": {
+        "type": "object",
+        "required": [
+          "user"
+        ],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "ownerId",
+          "title",
+          "bookCount",
+          "chapterCount",
+          "wordCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "ownerId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bookCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeBookId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ProjectList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateProjectRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "UpdateProjectRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "activeBookId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BookStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "indexing",
+          "ready",
+          "error"
+        ]
+      },
+      "IndexingStatus": {
+        "type": "string",
+        "enum": [
+          "not_started",
+          "queued",
+          "running",
+          "ready",
+          "failed"
+        ]
+      },
+      "IndexingSummary": {
+        "type": "object",
+        "required": [
+          "status",
+          "progress",
+          "currentUnit",
+          "totalUnits",
+          "lastIndexedAt"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/IndexingStatus"
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "activeJobId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Active import/indexing job used by book cards to show badges such as `9/14`."
+          },
+          "currentUnit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalUnits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastIndexedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Book": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "subtitle",
+          "order",
+          "displayNumber",
+          "displayLabel",
+          "status",
+          "chapterCount",
+          "wordCount",
+          "indexing",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based volume order inside the saga/project."
+          },
+          "displayNumber": {
+            "type": "string",
+            "description": "Visible volume number such as `I`, `II`, `III`, or `IV`."
+          },
+          "displayLabel": {
+            "type": "string",
+            "description": "Visible label such as `Книга II` used by cards, breadcrumbs, and references."
+          },
+          "coverColor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BookStatus"
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "indexing": {
+            "$ref": "#/components/schemas/IndexingSummary"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "BookList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Book"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateBookRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "coverColor": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "afterBookId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Insert/reorder the new volume after this book; null inserts at the beginning."
+          }
+        }
+      },
+      "UpdateBookRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 240
+          },
+          "coverColor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "afterBookId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Move this volume after another book; null moves it to the beginning."
+          }
+        }
+      },
+      "ImportConstraints": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "allowedExtensions",
+          "allowedMimeTypes",
+          "maxFileSizeBytes"
+        ],
+        "properties": {
+          "allowedExtensions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                ".fb2",
+                ".epub"
+              ]
+            },
+            "default": [
+              ".fb2",
+              ".epub"
+            ]
+          },
+          "allowedMimeTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "application/epub+zip",
+                "application/x-fictionbook+xml",
+                "text/xml",
+                "application/xml"
+              ]
+            },
+            "default": [
+              "application/epub+zip",
+              "application/x-fictionbook+xml",
+              "text/xml",
+              "application/xml"
+            ]
+          },
+          "maxFileSizeBytes": {
+            "type": "integer",
+            "const": 52428800,
+            "description": "50 MB limit shown in the import dropzone."
+          }
+        }
+      },
+      "ImportBookRequest": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "FB2 or EPUB file. Must satisfy `ImportConstraints`: .fb2/.epub and max 50 MB."
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "IndexingJobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "ready",
+          "failed",
+          "canceled"
+        ]
+      },
+      "IndexingJobStage": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "parsing",
+          "chunking",
+          "embedding",
+          "indexing",
+          "vectorizing",
+          "finalizing",
+          "ready",
+          "failed",
+          "canceled"
+        ]
+      },
+      "IndexingJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "status",
+          "stage",
+          "progress",
+          "currentUnit",
+          "totalUnits",
+          "unitLabel",
+          "canCancel",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/IndexingJobStatus"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/IndexingJobStage"
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "currentUnit": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current progress unit, e.g. 9 in `9 из 14`."
+          },
+          "totalUnits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total progress units, e.g. 14 in `9 из 14`."
+          },
+          "unitLabel": {
+            "type": "string",
+            "description": "Human-readable unit label such as chapters, fragments, or paragraphs."
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "stageLabel": {
+            "type": "string"
+          },
+          "sourceFileName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "failureCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "IndexingJobList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IndexingJob"
+            }
+          }
+        }
+      },
+      "ExportFormat": {
+        "type": "string",
+        "enum": [
+          "fb2",
+          "epub"
+        ]
+      },
+      "CreateExportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat"
+          }
+        }
+      },
+      "ExportJob": {
+        "type": "object",
+        "required": [
+          "id",
+          "bookId",
+          "format",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "ready",
+              "failed"
+            ]
+          },
+          "downloadUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ChapterViewMode": {
+        "type": "string",
+        "enum": [
+          "reading",
+          "draft"
+        ]
+      },
+      "ChapterStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "published",
+          "publishing",
+          "publish_failed",
+          "stale",
+          "conflict"
+        ]
+      },
+      "ChapterNavigationItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "displayNumber",
+          "displayLabel"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "displayNumber": {
+            "type": "string",
+            "description": "Visible chapter number, e.g. `11`."
+          },
+          "displayLabel": {
+            "type": "string",
+            "description": "Renderable previous/next label, e.g. `11. Колокол южного ряда`."
+          }
+        }
+      },
+      "ChapterNavigation": {
+        "type": "object",
+        "required": [
+          "displayNumber",
+          "position",
+          "total",
+          "readingProgress",
+          "readingTimeMinutes",
+          "previousChapterId",
+          "nextChapterId",
+          "previous",
+          "next"
+        ],
+        "properties": {
+          "displayNumber": {
+            "type": "string",
+            "description": "Visible chapter number/label used in reader header/footer."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "One-based chapter position in the current book."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Total chapters in the current book."
+          },
+          "readingProgress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Book-level reading progress, e.g. 0.48 for 48%."
+          },
+          "readingTimeMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "previousChapterId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextChapterId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChapterNavigationItem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Renderable previous chapter control; null at the beginning of a book."
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChapterNavigationItem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Renderable next chapter control; null at the end of a book."
+          }
+        }
+      },
+      "Chapter": {
+        "type": "object",
+        "required": [
+          "id",
+          "bookId",
+          "title",
+          "order",
+          "viewMode",
+          "status",
+          "paragraphs",
+          "wordCount",
+          "revision",
+          "draftRevision",
+          "publishedRevision",
+          "savedAt",
+          "navigation",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "viewMode": {
+            "$ref": "#/components/schemas/ChapterViewMode"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChapterStatus"
+          },
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterParagraph"
+            }
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Revision of the payload returned for the selected viewMode."
+          },
+          "draftRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedRevision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "savedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publishError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "navigation": {
+            "$ref": "#/components/schemas/ChapterNavigation"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ChapterParagraph": {
+        "type": "object",
+        "required": [
+          "id",
+          "order",
+          "kind",
+          "text",
+          "markdown"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "paragraph",
+              "heading",
+              "quote",
+              "list_item",
+              "scene_break"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Plain text derived from markdown for search, references, and compact previews."
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Canonical editable paragraph content. Supports the draft toolbar subset: bold, italic, heading, quote, list item, and link markup."
+          }
+        }
+      },
+      "ChapterParagraphInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "order",
+          "kind",
+          "markdown"
+        ],
+        "description": "Input shape for draft saves. Existing paragraphs keep `id`; newly inserted paragraphs omit `id` and may send `clientKey` so the frontend can reconcile the saved response.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "clientKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Temporary frontend key for unsaved paragraphs. Backend returns stable paragraph IDs in `ChapterParagraph` after save/indexing."
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "paragraph",
+              "heading",
+              "quote",
+              "list_item",
+              "scene_break"
+            ]
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional plain-text mirror; backend may derive it from markdown."
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Canonical editable paragraph content using the supported draft toolbar markdown subset."
+          }
+        }
+      },
+      "ChapterSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "bookId",
+          "title",
+          "order",
+          "displayNumber",
+          "status",
+          "wordCount",
+          "hasDraft",
+          "isCurrent"
+        ],
+        "description": "Lightweight chapter structure item for TOC/sidebar/list screens. Full paragraph content is returned only by `/chapters/{chapterId}`.",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "displayNumber": {
+            "type": "string",
+            "description": "Visible chapter number/label used in structure navigation."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChapterStatus"
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasDraft": {
+            "type": "boolean"
+          },
+          "isCurrent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ChapterList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterSummary"
+            }
+          }
+        }
+      },
+      "CreateChapterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "afterChapterId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterParagraphInput"
+            }
+          }
+        }
+      },
+      "UpdateChapterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedRevision"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          },
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChapterParagraphInput"
+            }
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "PublishChapterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedDraftRevision"
+        ],
+        "properties": {
+          "expectedDraftRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Draft revision the frontend is publishing. Backend returns 409 if the draft changed."
+          }
+        }
+      },
+      "TextRange": {
+        "type": "object",
+        "required": [
+          "startOffset",
+          "endOffset"
+        ],
+        "description": "Optional precision range inside the paragraph identified by a surrounding ReaderLocator.",
+        "properties": {
+          "startOffset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endOffset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReaderLocator": {
+        "type": "object",
+        "required": [
+          "projectId",
+          "bookId",
+          "chapterId",
+          "targetView"
+        ],
+        "properties": {
+          "projectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chapterId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "targetView": {
+            "$ref": "#/components/schemas/ChapterViewMode",
+            "description": "Text version this locator points to. Chat reader references normally use `reading`; agent suggestions and draft selections normally use `draft`."
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional chapter revision for stale/conflict-sensitive anchors."
+          },
+          "paragraphId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stable paragraph anchor used by assistant trigger markers when the reference points to a specific paragraph."
+          },
+          "range": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "annotationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "chat_reference",
+              "search_result",
+              "annotation",
+              "manual"
+            ]
+          }
+        }
+      },
+      "ReaderReferenceLocator": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          {
+            "type": "object",
+            "required": [
+              "paragraphId"
+            ],
+            "properties": {
+              "paragraphId": {
+                "$ref": "#/components/schemas/Id",
+                "description": "Required stable paragraph anchor for interactive reader references from chat/search artifacts."
+              }
+            }
+          }
+        ]
+      },
+      "ReaderAnnotationKind": {
+        "type": "string",
+        "enum": [
+          "highlight",
+          "note",
+          "bookmark"
+        ]
+      },
+      "ReaderAnnotationStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "saved"
+        ]
+      },
+      "ReaderAnnotationBase": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "bookId",
+          "chapterId",
+          "kind",
+          "locator",
+          "status",
+          "createdFromSelection",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bookId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chapterId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ReaderAnnotationKind"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Selected text shown on highlight/note cards; null for pure bookmarks."
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "User note text; null for highlights/bookmarks without note text."
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReaderAnnotationStatus"
+          },
+          "createdFromSelection": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "HighlightAnnotation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReaderAnnotationBase"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "locator",
+              "quote",
+              "color"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "highlight"
+              },
+              "locator": {
+                "$ref": "#/components/schemas/ReaderReferenceLocator"
+              },
+              "quote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              "body": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional note text attached to the highlight."
+              }
+            }
+          }
+        ]
+      },
+      "NoteAnnotation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReaderAnnotationBase"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "body"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "note"
+              },
+              "body": {
+                "type": "string",
+                "minLength": 1
+              },
+              "quote": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Selected text quoted by the note when created from a reader selection."
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            }
+          }
+        ]
+      },
+      "BookmarkAnnotation": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReaderAnnotationBase"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "bookmark"
+              },
+              "quote": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "body": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional bookmark note."
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              }
+            }
+          }
+        ]
+      },
+      "ReaderAnnotation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HighlightAnnotation"
+          },
+          {
+            "$ref": "#/components/schemas/NoteAnnotation"
+          },
+          {
+            "$ref": "#/components/schemas/BookmarkAnnotation"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "highlight": "#/components/schemas/HighlightAnnotation",
+            "note": "#/components/schemas/NoteAnnotation",
+            "bookmark": "#/components/schemas/BookmarkAnnotation"
+          }
+        }
+      },
+      "ReaderAnnotationList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReaderAnnotation"
+            }
+          }
+        }
+      },
+      "CreateHighlightAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "locator",
+          "quote",
+          "color"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "highlight"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderReferenceLocator"
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "createdFromSelection": {
+            "type": "boolean",
+            "default": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateNoteAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "locator",
+          "body"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "note"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "createdFromSelection": {
+            "type": "boolean",
+            "default": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateBookmarkAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "locator"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "bookmark"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "createdFromSelection": {
+            "type": "boolean",
+            "default": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateReaderAnnotationRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreateHighlightAnnotationRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CreateNoteAnnotationRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CreateBookmarkAnnotationRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "highlight": "#/components/schemas/CreateHighlightAnnotationRequest",
+            "note": "#/components/schemas/CreateNoteAnnotationRequest",
+            "bookmark": "#/components/schemas/CreateBookmarkAnnotationRequest"
+          }
+        }
+      },
+      "UpdateHighlightAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "highlight"
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReaderAnnotationStatus"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateNoteAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "note"
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReaderAnnotationStatus"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateBookmarkAnnotationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "bookmark"
+          },
+          "quote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReaderAnnotationStatus"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateReaderAnnotationRequest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/UpdateHighlightAnnotationRequest"
+          },
+          {
+            "$ref": "#/components/schemas/UpdateNoteAnnotationRequest"
+          },
+          {
+            "$ref": "#/components/schemas/UpdateBookmarkAnnotationRequest"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "highlight": "#/components/schemas/UpdateHighlightAnnotationRequest",
+            "note": "#/components/schemas/UpdateNoteAnnotationRequest",
+            "bookmark": "#/components/schemas/UpdateBookmarkAnnotationRequest"
+          }
+        }
+      },
+      "SearchScope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "chapters",
+          "annotations",
+          "canon",
+          "materials"
+        ],
+        "default": "all"
+      },
+      "SearchResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "excerpt",
+          "locator"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "chapter",
+              "annotation",
+              "canon_fact",
+              "material"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderLocator"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "required": [
+          "query",
+          "scope",
+          "data"
+        ],
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/SearchScope"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          }
+        }
+      },
+      "ChatSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "projectId",
+          "title",
+          "messageCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "projectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "messageCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastMessagePreview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ChatSessionList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatSession"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateChatSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          }
+        }
+      },
+      "UpdateChatSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 180
+          }
+        }
+      },
+      "AgentTask": {
+        "type": "string",
+        "enum": [
+          "canon",
+          "punctuation",
+          "style",
+          "continuity",
+          "rewrite"
+        ]
+      },
+      "AgentOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentTask"
+            },
+            "description": "Agent task chips selected in the UI, e.g. canon, punctuation, or style."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "current_selection",
+              "current_chapter",
+              "current_book",
+              "project"
+            ],
+            "default": "current_chapter"
+          }
+        }
+      },
+      "ChatRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "assistant",
+          "system",
+          "tool"
+        ]
+      },
+      "ChatMessagePartType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "reasoning",
+          "tool_call",
+          "tool_result",
+          "trigger"
+        ]
+      },
+      "ChatMessagePartStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "completed",
+          "failed"
+        ]
+      },
+      "ChatMessagePart": {
+        "type": "object",
+        "required": [
+          "type",
+          "text"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/ChatMessagePartType"
+          },
+          "text": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Stable ordering copied from stream events where available."
+          },
+          "toolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "toolCallId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatMessagePartStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Short chip label such as `Думал 12 сек`, `Поиск`, or `3 фрагмента`."
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ChatMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "chatId",
+          "role",
+          "content",
+          "parts",
+          "triggers",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chatId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ChatRole"
+          },
+          "content": {
+            "type": "string",
+            "description": "Assistant/user text. Assistant text may contain trigger markers such as `::ck-trigger{kind=\"reader_references\" artifactId=\"...\"}` or `::ck-trigger{kind=\"agent_suggestions_ready\" chapterId=\"...\"}`. The client turns those markers into interactive UI by fetching the relevant resource."
+          },
+          "parts": {
+            "type": "array",
+            "description": "Persisted render parts for reasoning blocks, tool chips, trigger markers, and visible text after the stream completes.",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessagePart"
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatTrigger"
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          }
+        }
+      },
+      "ChatMessageList": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        }
+      },
+      "CreateChatMessageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12000
+          },
+          "readerContext": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderLocator"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contextLocators": {
+            "type": "array",
+            "description": "Explicit reader/draft context selected by the user or UI before sending the agent request.",
+            "items": {
+              "$ref": "#/components/schemas/ReaderLocator"
+            }
+          },
+          "agentOptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stream": {
+            "type": "boolean",
+            "default": true,
+            "description": "When true, return a normal LLM `text/event-stream`. When false, return a completed JSON turn."
+          }
+        }
+      },
+      "LlmStreamEventType": {
+        "type": "string",
+        "enum": [
+          "text_delta",
+          "reasoning_delta",
+          "tool_call",
+          "tool_result",
+          "completed",
+          "error"
+        ]
+      },
+      "LlmStreamEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LlmTextDeltaEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LlmReasoningDeltaEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LlmToolCallEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LlmToolResultEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LlmCompletedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/LlmErrorEvent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "text_delta": "#/components/schemas/LlmTextDeltaEvent",
+            "reasoning_delta": "#/components/schemas/LlmReasoningDeltaEvent",
+            "tool_call": "#/components/schemas/LlmToolCallEvent",
+            "tool_result": "#/components/schemas/LlmToolResultEvent",
+            "completed": "#/components/schemas/LlmCompletedEvent",
+            "error": "#/components/schemas/LlmErrorEvent"
+          }
+        },
+        "description": "Provider-neutral JSON data payload for ordinary LLM text/event-stream chunks. Domain objects are not special stream events; they are referenced by trigger markers in text."
+      },
+      "LlmTextDeltaEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "delta"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text_delta"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Monotonic per-stream event sequence used by clients to render stable reasoning/tool/text order."
+          },
+          "delta": {
+            "type": "string",
+            "description": "Assistant-visible text token delta. Trigger markers, when present, appear in this ordinary text."
+          }
+        }
+      },
+      "LlmReasoningDeltaEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "delta"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "reasoning_delta"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "delta": {
+            "type": "string",
+            "description": "Reasoning/status text delta shown in the agent/reasoning area when the selected provider exposes it."
+          }
+        }
+      },
+      "LlmToolCallEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "toolCallId",
+          "toolName"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_call"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "delta": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional short display payload for the tool chip."
+          }
+        }
+      },
+      "LlmToolResultEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "toolCallId",
+          "toolName",
+          "delta"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "tool_result"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "delta": {
+            "type": "string",
+            "description": "Human-readable tool result summary for the stream UI."
+          }
+        }
+      },
+      "LlmCompletedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "assistantMessageId",
+          "turnId",
+          "finishReason"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "completed"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "assistantMessageId": {
+            "$ref": "#/components/schemas/Id",
+            "description": "Persisted assistant message id created for this completed turn."
+          },
+          "turnId": {
+            "type": "string"
+          },
+          "finishReason": {
+            "type": "string",
+            "enum": [
+              "stop",
+              "length",
+              "content_filter"
+            ]
+          }
+        }
+      },
+      "LlmErrorEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "sequence",
+          "message",
+          "finishReason"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "error"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message safe to show in the chat UI."
+          },
+          "finishReason": {
+            "type": "string",
+            "enum": [
+              "tool_error",
+              "content_filter",
+              "error"
+            ]
+          }
+        }
+      },
+      "ChatArtifactKind": {
+        "type": "string",
+        "enum": [
+          "reader_references"
+        ]
+      },
+      "ChatTriggerKind": {
+        "type": "string",
+        "enum": [
+          "reader_references",
+          "agent_suggestions_ready"
+        ]
+      },
+      "ChatArtifactStatus": {
+        "type": "string",
+        "enum": [
+          "creating",
+          "ready",
+          "failed"
+        ]
+      },
+      "ChatTrigger": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ReaderReferencesChatTrigger"
+          },
+          {
+            "$ref": "#/components/schemas/AgentSuggestionsReadyChatTrigger"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "reader_references": "#/components/schemas/ReaderReferencesChatTrigger",
+            "agent_suggestions_ready": "#/components/schemas/AgentSuggestionsReadyChatTrigger"
+          }
+        }
+      },
+      "ReaderReferencesChatTrigger": {
+        "type": "object",
+        "required": [
+          "marker",
+          "kind",
+          "artifactId"
+        ],
+        "properties": {
+          "marker": {
+            "type": "string",
+            "description": "Exact marker present in `ChatMessage.content`, for example `::ck-trigger{kind=\"reader_references\" artifactId=\"...\"}`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "reader_references"
+            ]
+          },
+          "artifactId": {
+            "$ref": "#/components/schemas/Id",
+            "description": "Present for `reader_references`; fetch with `/chat-artifacts/{artifactId}`."
+          }
+        }
+      },
+      "AgentSuggestionsReadyChatTrigger": {
+        "type": "object",
+        "required": [
+          "marker",
+          "kind",
+          "chapterId"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "suggestionBatchId"
+            ]
+          },
+          {
+            "required": [
+              "suggestionIds"
+            ]
+          }
+        ],
+        "properties": {
+          "marker": {
+            "type": "string",
+            "description": "Exact marker present in `ChatMessage.content`, for example `::ck-trigger{kind=\"agent_suggestions_ready\" chapterId=\"...\" suggestionBatchId=\"...\"}`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "agent_suggestions_ready"
+            ]
+          },
+          "chapterId": {
+            "$ref": "#/components/schemas/Id",
+            "description": "Present for `agent_suggestions_ready`; fetch with `/chapters/{chapterId}/agent-suggestions`."
+          },
+          "suggestionBatchId": {
+            "$ref": "#/components/schemas/Id",
+            "description": "Present for `agent_suggestions_ready` when the backend created a batch of suggestions for one assistant turn."
+          },
+          "suggestionIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Specific backend-created suggestions referenced by this trigger."
+          }
+        }
+      },
+      "ReaderReference": {
+        "type": "object",
+        "required": [
+          "id",
+          "locator",
+          "label",
+          "quote"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "locator": {
+            "$ref": "#/components/schemas/ReaderReferenceLocator"
+          },
+          "label": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          }
+        }
+      },
+      "ChatArtifact": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chatId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "messageId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChatArtifactKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChatArtifactStatus"
+          },
+          "readerReferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReaderReference"
+            }
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ChatTurn": {
+        "type": "object",
+        "required": [
+          "userMessage",
+          "assistantMessage"
+        ],
+        "properties": {
+          "userMessage": {
+            "$ref": "#/components/schemas/ChatMessage"
+          },
+          "assistantMessage": {
+            "$ref": "#/components/schemas/ChatMessage"
+          },
+          "readerTarget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderLocator"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional initial reader pane location selected by the assistant."
+          }
+        }
+      },
+      "AgentSuggestionKind": {
+        "type": "string",
+        "enum": [
+          "punctuation",
+          "canon_consistency",
+          "style",
+          "continuity",
+          "rewrite"
+        ]
+      },
+      "AgentSuggestionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected",
+          "stale",
+          "conflict"
+        ]
+      },
+      "AgentDiffLocator": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          {
+            "type": "object",
+            "required": [
+              "paragraphId",
+              "range"
+            ],
+            "properties": {
+              "paragraphId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "range": {
+                "$ref": "#/components/schemas/TextRange"
+              }
+            }
+          }
+        ],
+        "description": "Draft locator precise enough to render and apply an agent diff hunk."
+      },
+      "DiffHunk": {
+        "type": "object",
+        "required": [
+          "hunkId",
+          "range",
+          "before",
+          "after"
+        ],
+        "properties": {
+          "hunkId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "range": {
+            "$ref": "#/components/schemas/AgentDiffLocator"
+          },
+          "before": {
+            "type": "string"
+          },
+          "after": {
+            "type": "string"
+          }
+        }
+      },
+      "AgentSuggestion": {
+        "type": "object",
+        "required": [
+          "id",
+          "chapterId",
+          "kind",
+          "title",
+          "rationale",
+          "baseChapterRevision",
+          "batchId",
+          "anchorLocator",
+          "contextQuote",
+          "diffs",
+          "status",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chapterId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AgentSuggestionKind"
+          },
+          "title": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "baseChapterRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Chapter revision used by the backend/agent when it created this suggestion."
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id",
+            "description": "Suggestion batch created by one assistant turn or backend agent run."
+          },
+          "sourceMessageId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Assistant message that triggered the backend-created suggestion, when available."
+          },
+          "anchorLocator": {
+            "$ref": "#/components/schemas/ReaderLocator"
+          },
+          "contextQuote": {
+            "type": "string",
+            "description": "Selected or surrounding draft text used as visible context for the suggestion card."
+          },
+          "diffs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/DiffHunk"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentSuggestionStatus"
+          },
+          "conflictReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/DateTime"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentSuggestionList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentSuggestion"
+            }
+          }
+        }
+      },
+      "ApproveAgentSuggestionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "expectedChapterRevision"
+        ],
+        "properties": {
+          "expectedChapterRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Current chapter revision known by the client before applying the suggestion."
+          }
+        }
+      },
+      "RequestAgentSuggestionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "prompt",
+          "expectedChapterRevision"
+        ],
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Editor instruction describing the requested draft change."
+          },
+          "expectedChapterRevision": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Chapter revision the editor is working against; backend returns 409 if stale."
+          },
+          "selectionQuote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional selected draft text the suggestion should target."
+          },
+          "anchorLocator": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReaderLocator"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentSuggestionActionResult": {
+        "type": "object",
+        "required": [
+          "suggestion",
+          "chapter"
+        ],
+        "properties": {
+          "suggestion": {
+            "$ref": "#/components/schemas/AgentSuggestion"
+          },
+          "chapter": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Chapter"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Updated chapter after accept; null after reject."
+          }
+        }
+      }
+    }
+  }
+}

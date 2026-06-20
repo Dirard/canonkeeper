@@ -1,0 +1,757 @@
+.workspace {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 64px minmax(0, 1fr);
+  background: var(--ck-background);
+  color: var(--ck-foreground);
+}
+
+/* Neutral fallback for the lazily-loaded draft editor chunk; matches the app
+   background so the editor never flashes a blank frame while loading. */
+.modeFallback {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ck-background);
+}
+
+.globalBar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 0 28px;
+  background: var(--ck-background);
+}
+
+.brand {
+  width: 124px;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ck-foreground-strong);
+  font-size: 18px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileTitle {
+  display: none;
+}
+
+.iconButton,
+.mobileMenuButton,
+.avatarButton {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+}
+
+.iconButton,
+.mobileMenuButton {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+}
+
+.iconButton:hover,
+.mobileMenuButton:hover {
+  background: var(--ck-muted);
+  color: var(--ck-foreground);
+}
+
+.mobileMenuButton {
+  display: none;
+}
+
+.globalSearchButton {
+  display: flex;
+  align-items: center;
+  width: 420px;
+  height: 40px;
+  gap: 10px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 14px;
+  background: var(--ck-card);
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.barActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 211px;
+  gap: 12px;
+}
+
+.cabinetButton,
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  gap: 8px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 14px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  cursor: pointer;
+}
+
+.primaryButton {
+  border-color: var(--ck-primary);
+  background: var(--ck-primary);
+  color: var(--ck-primary-foreground);
+}
+
+.cabinetButton {
+  width: 171px;
+  min-height: 37px;
+  height: 37px;
+  padding: 0 16px;
+}
+
+.dangerButton {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.avatarButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ck-ink);
+  color: var(--ck-ink-foreground);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.body {
+  display: flex;
+  min-height: 0;
+}
+
+.projectMeta,
+.muted {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.sectionLabel {
+  margin: 0 0 8px;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Active workspace icon in the tablet rail (shared sidebar owns the rest). */
+.activeNavButton {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  width: 100%;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 10px;
+  background: var(--ck-sidebar-accent);
+  color: var(--ck-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tabletRail {
+  display: none;
+  width: 64px;
+  min-width: 64px;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  border-right: 1px solid var(--ck-border);
+  padding: 16px 10px;
+  background: var(--ck-card);
+}
+
+.content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+  overflow: auto;
+  padding: 32px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.titleBlock h1 {
+  margin: 0 0 6px;
+  color: var(--ck-foreground-strong);
+  font-family: var(--ck-font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.topActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.indexBanner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 200px auto auto;
+  align-items: center;
+  gap: 16px;
+  border-left: 3px solid #8a6a0a;
+  border-radius: var(--ck-radius-sm);
+  padding: 16px;
+  background: var(--ck-card);
+}
+
+.indexBanner strong,
+.bookInfo strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.progressTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ck-muted);
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ck-primary);
+}
+
+.percentBadge,
+.statusReady,
+.statusDraft,
+.statusIndexing,
+.statusError {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.statusReady {
+  background: var(--ck-color-success);
+  color: var(--ck-color-success-foreground);
+}
+
+.statusDraft,
+.percentBadge {
+  background: var(--ck-color-warning);
+  color: var(--ck-color-warning-foreground);
+}
+
+.statusIndexing {
+  background: var(--ck-indexing);
+  color: var(--ck-indexing-foreground);
+}
+
+.statusError {
+  background: var(--ck-color-error);
+  color: var(--ck-color-error-foreground);
+}
+
+.booksGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.bookCard,
+.activeBookCard {
+  position: relative;
+  width: 220px;
+  flex: 0 0 220px;
+  overflow: hidden;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: var(--ck-card);
+  animation: ck-fade-up var(--ck-duration-base) var(--ck-ease-out);
+  transition:
+    transform var(--ck-duration-fast) var(--ck-ease-out),
+    box-shadow var(--ck-duration-fast) var(--ck-ease-out);
+}
+
+.bookCard:hover,
+.activeBookCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgb(0 0 0 / 10%);
+}
+
+.activeBookCard {
+  border: 2px solid var(--ck-primary);
+}
+
+.cover {
+  display: flex;
+  align-items: flex-end;
+  min-height: 150px;
+  padding: 14px;
+  color: #ffffff;
+  font-family: var(--ck-font-serif);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.bookMenuButton {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: #00000040;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.bookInfo {
+  padding: 12px;
+}
+
+.bookInfo strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.bookInfo p {
+  margin: 0 0 10px;
+  color: var(--ck-subtle-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.textButton {
+  border: 0;
+  background: transparent;
+  color: var(--ck-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.dropZone {
+  display: grid;
+  min-height: 132px;
+  place-items: center;
+  border: 1.5px solid var(--ck-border-strong);
+  border-radius: var(--ck-radius-lg);
+  padding: 28px;
+  background: var(--ck-card);
+  text-align: center;
+}
+
+.dropZone strong {
+  display: block;
+  margin: 8px 0 6px;
+}
+
+.dropZone:hover {
+  border-color: var(--ck-primary);
+}
+
+.dropZoneActive {
+  border-color: var(--ck-primary);
+  border-style: dashed;
+  background: var(--ck-source-active, var(--ck-card));
+}
+
+.fileInput {
+  display: none;
+}
+
+.notice {
+  margin: 18px 0 0;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 12px 14px;
+  background: var(--ck-muted);
+  color: var(--ck-muted-foreground);
+}
+
+.searchPanel,
+.accountMenu,
+.projectMenu {
+  position: absolute;
+  z-index: 40;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-card);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 14%);
+}
+
+.floatingMenu {
+  position: fixed;
+  z-index: 61;
+  top: 96px;
+  left: 320px;
+  width: 258px;
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 8px;
+  background: var(--ck-card);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 14%);
+  outline: none;
+}
+
+/* Restored-from-URL menu has no anchor point — center it instead of a corner. */
+.floatingMenuCentered {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.floatingMenuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  gap: 10px;
+  border-bottom: 1px solid var(--ck-border);
+  margin-bottom: 6px;
+  padding: 0 2px 6px 8px;
+}
+
+.floatingMenuHeader strong {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floatingMenuHeader .iconButton {
+  flex: 0 0 auto;
+}
+
+.searchPanel {
+  top: 54px;
+  left: 50%;
+  width: min(560px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  padding: 14px;
+}
+
+.searchForm {
+  display: flex;
+  gap: 8px;
+}
+
+.searchForm input {
+  min-height: 42px;
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+}
+
+.searchResults {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.searchResult,
+.menuItem,
+.dangerMenuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  gap: 10px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ck-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchResult {
+  display: block;
+  border: 1px solid var(--ck-border);
+  padding: 10px;
+}
+
+.searchResult p {
+  margin: 4px 0 0;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.dangerMenuItem {
+  color: #dc2626;
+}
+
+.menuItem:hover,
+.dangerMenuItem:hover,
+.searchResult:hover {
+  background: var(--ck-muted);
+}
+
+.accountMenu {
+  top: 54px;
+  right: 28px;
+  width: 230px;
+  padding: 10px;
+}
+
+.projectMenu {
+  top: 114px;
+  left: 18px;
+  width: 240px;
+  padding: 8px;
+}
+
+.layer,
+.drawerLayer,
+.menuLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgb(17 24 39 / 44%);
+}
+
+.layer {
+  display: grid;
+  place-items: center;
+}
+
+.drawerLayer {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.menuLayer {
+  background: transparent;
+}
+
+.modal,
+.mobileDrawer {
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 16%);
+}
+
+.modal {
+  width: min(440px, calc(100vw - 32px));
+  border-radius: var(--ck-radius-md);
+  padding: 20px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.modalCopy {
+  margin: 16px 0;
+  color: var(--ck-muted-foreground);
+  line-height: 1.45;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.mobileDrawer {
+  display: flex;
+  width: min(320px, 86vw);
+  height: 100%;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 16px;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drawerHeader h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+@media (max-width: 1100px) {
+  .globalBar {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    padding: 0 22px;
+  }
+
+  .barActions {
+    width: auto;
+  }
+
+  .mobileMenuButton {
+    display: inline-grid;
+  }
+
+  .brand {
+    width: auto;
+    grid-column: 2;
+  }
+
+  .globalSearchButton {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+  }
+
+  .globalSearchButton span {
+    display: none;
+  }
+
+  .cabinetButton {
+    display: none;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .tabletRail {
+    display: flex;
+  }
+
+  .content {
+    padding: 28px 24px 56px;
+  }
+}
+
+@media (max-width: 700px) {
+  .workspace {
+    grid-template-rows: 52px minmax(0, 1fr);
+  }
+
+  .globalBar {
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .desktopBrand {
+    display: none;
+  }
+
+  .mobileTitle {
+    display: inline;
+  }
+
+  .tabletRail {
+    display: none;
+  }
+
+  .content {
+    padding: 18px 16px 36px;
+  }
+
+  .headerRow {
+    display: block;
+  }
+
+  .titleBlock h1 {
+    font-size: 23px;
+  }
+
+  .topActions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    margin-top: 16px;
+  }
+
+  .booksGrid {
+    gap: 16px;
+  }
+
+  /* Stack book cards full-width on phones. */
+  .bookCard,
+  .activeBookCard {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .cover {
+    min-height: 148px;
+  }
+
+  .indexBanner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .indexBanner .progressTrack,
+  .indexBanner .percentBadge {
+    grid-column: 1 / -1;
+  }
+}

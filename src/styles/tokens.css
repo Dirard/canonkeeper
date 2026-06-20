@@ -1,0 +1,77 @@
+:root {
+  /* Surfaces */
+  --ck-background: #fbfbfa;
+  --ck-card: #ffffff;
+  --ck-popover: #ffffff;
+  --ck-sidebar: #f5f5f4;
+  --ck-sidebar-accent: #eaeae8;
+  --ck-reader: #ffffff;
+  --ck-reader-pane: #f7f7f6;
+  --ck-user-bubble: #f3f3f1;
+
+  /* Foreground / text */
+  --ck-foreground: #18181b;
+  --ck-foreground-strong: #111114;
+  --ck-muted-foreground: #636b77;
+  --ck-subtle-foreground: #767c87;
+  --ck-sidebar-foreground: #636b77;
+  --ck-reader-foreground: #1f2933;
+
+  /* Accent / neutral fills */
+  --ck-accent: #ededeb;
+  --ck-secondary: #f1f1ef;
+  --ck-muted: #f2f3f0;
+
+  /* Borders */
+  --ck-border: #e7e7e4;
+  --ck-border-strong: #dadad6;
+
+  /* Brand / primary */
+  --ck-primary: #4f46e5;
+  --ck-primary-foreground: #ffffff;
+  --ck-ring: #4f46e5;
+  --ck-ink: #18181b;
+  --ck-ink-foreground: #ffffff;
+
+  /* Semantic */
+  --ck-citation: #eef2ff;
+  --ck-citation-foreground: #4f46e5;
+  --ck-source-active: #eef0fb;
+  --ck-highlight: #fef3c7;
+  --ck-highlight-foreground: #1f2933;
+  --ck-indexing: #fdf1d6;
+  --ck-indexing-foreground: #8a6a0a;
+  --ck-destructive: #dc2626;
+  --ck-destructive-foreground: #ffffff;
+  --ck-color-success: #dcfce7;
+  --ck-color-success-foreground: #15803d;
+  --ck-color-warning: #fef3c7;
+  --ck-color-warning-foreground: #92740e;
+  --ck-color-error: #fee2e2;
+  --ck-color-error-foreground: #b91c1c;
+
+  /* Reading themes */
+  --ck-reader-sepia: #f4ecd8;
+  --ck-reader-dark: #2e2e2e;
+
+  /* Radii */
+  --ck-radius-xs: 6px;
+  --ck-radius-sm: 8px;
+  --ck-radius-md: 10px;
+  --ck-radius-lg: 14px;
+  --ck-radius-m: 16px;
+  --ck-radius-pill: 999px;
+
+  /* Typography */
+  --ck-font-sans: Inter, system-ui, sans-serif;
+  --ck-font-serif: "Source Serif 4", Georgia, serif;
+  --ck-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+  /* Motion */
+  --ck-ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --ck-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ck-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ck-duration-fast: 130ms;
+  --ck-duration-base: 200ms;
+  --ck-duration-slow: 280ms;
+}

@@ -1,0 +1,1192 @@
+.workspace {
+  position: relative;
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 64px minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--ck-background);
+  color: var(--ck-foreground);
+}
+
+/* Reading themes recolor the editor surface and the right pane (structure /
+   notes / agent) by overriding design tokens in scope, so headers, toolbar,
+   footer, diff cards, borders and labels all stay consistent and legible.
+   The top bar and left sidebar keep the app's light chrome. */
+.workspace[data-display-theme='sepia'] .editor,
+.workspace[data-display-theme='sepia'] .rightPane,
+.mobileSurface[data-display-theme='sepia'],
+.mobileSheet[data-display-theme='sepia'] {
+  --ck-card: #faf3e2;
+  --ck-reader: #faf3e2;
+  --ck-reader-pane: #f1e7d0;
+  --ck-muted: #ece0c4;
+  --ck-secondary: #ece0c4;
+  --ck-sidebar-accent: #efe7d3;
+  --ck-source-active: #efe7d3;
+  --ck-border: #e3d7bd;
+  --ck-border-strong: #d6c8a8;
+  background: #faf3e2;
+}
+
+.workspace[data-display-theme='dark'] .editor,
+.workspace[data-display-theme='dark'] .rightPane,
+.mobileSurface[data-display-theme='dark'],
+.mobileSheet[data-display-theme='dark'] {
+  --ck-card: #232326;
+  --ck-reader: #232326;
+  --ck-reader-pane: #1b1b1d;
+  --ck-foreground: #f4f4f2;
+  --ck-foreground-strong: #ffffff;
+  --ck-reader-foreground: #e7e7e4;
+  --ck-muted-foreground: #a8a8b0;
+  --ck-subtle-foreground: #8d8d96;
+  --ck-muted: #2e2e33;
+  --ck-secondary: #2e2e33;
+  --ck-sidebar-accent: #2e2e33;
+  --ck-source-active: #2c2c40;
+  --ck-border: #38383d;
+  --ck-border-strong: #4a4a51;
+  --ck-ink: #e7e7e4;
+  --ck-ink-foreground: #1b1b1d;
+  --ck-color-success: #18361f;
+  --ck-color-success-foreground: #5ee08a;
+  --ck-color-error: #3a1d1d;
+  --ck-color-error-foreground: #f78f8f;
+  --ck-color-warning: #4a4326;
+  --ck-color-warning-foreground: #fde68a;
+  background: #232326;
+  color: #e7e7e4;
+}
+
+.workspace[data-display-theme='dark'] .editor [contenteditable],
+.workspace[data-display-theme='dark'] .editor [contenteditable] *,
+.mobileSurface[data-display-theme='dark'] [contenteditable],
+.mobileSurface[data-display-theme='dark'] [contenteditable] * {
+  color: #e7e7e4;
+}
+
+.globalBar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 0 28px;
+  background: var(--ck-background);
+}
+
+.brand {
+  width: 124px;
+  margin: 0;
+  color: var(--ck-foreground-strong);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.globalSearchButton {
+  display: flex;
+  align-items: center;
+  width: 420px;
+  height: 40px;
+  gap: 10px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 14px;
+  background: var(--ck-card);
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.globalSearchButton span {
+  overflow: hidden;
+  flex: 1;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barActions {
+  display: flex;
+  align-items: center;
+  width: 211px;
+  gap: 12px;
+}
+
+.cabinetButton,
+.primaryButton,
+.secondaryButton,
+.publishButton,
+.mobilePublish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  background: transparent;
+  color: var(--ck-foreground);
+  cursor: pointer;
+}
+
+.cabinetButton {
+  width: 171px;
+  min-height: 37px;
+  height: 37px;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.avatarButton,
+.iconOnlyButton,
+.toolButton,
+.mobileBack {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+}
+
+.avatarButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ck-ink);
+  color: var(--ck-ink-foreground);
+  font-size: 12px;
+}
+
+.accountMenu {
+  position: absolute;
+  top: 54px;
+  right: 28px;
+  z-index: 30;
+  width: 220px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  padding: 8px;
+  background: var(--ck-card);
+  box-shadow: 0 16px 40px #1718281f;
+}
+
+.accountMenu p {
+  margin: 6px 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 8px;
+  background: transparent;
+  color: var(--ck-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.body {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 276px minmax(0, 1fr) 340px;
+}
+
+.sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  border-right: 1px solid var(--ck-border);
+  padding: 18px;
+  background: var(--ck-sidebar);
+}
+
+.muted {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.sectionLabel {
+  margin: 0;
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.iconOnlyButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-foreground);
+}
+
+.editor {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 44px 84px 48px minmax(0, 1fr) 60px;
+  overflow: hidden;
+  background: var(--ck-card);
+}
+
+/* Reading mode hides the format toolbar; drop its grid row so the reading
+   surface stretches to fill the available height. */
+.editorReading {
+  grid-template-rows: 44px 84px minmax(0, 1fr) 60px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 10px 30px;
+  background: var(--ck-card);
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.crumbBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 4px 6px;
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.crumbSep {
+  color: var(--ck-subtle-foreground, #767c87);
+}
+
+.breadcrumb strong {
+  color: var(--ck-foreground);
+  font-weight: 500;
+}
+
+.docHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ck-border-strong);
+  padding: 18px 30px;
+  background: var(--ck-card);
+}
+
+.titleBlock {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 8px;
+}
+
+.titleBlock p {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+}
+
+.titleBlock h1 {
+  margin: 0;
+  color: var(--ck-foreground-strong);
+  font-family: var(--ck-font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.12;
+}
+
+.modeToggle {
+  display: flex;
+  gap: 2px;
+  border-radius: var(--ck-radius-md);
+  padding: 3px;
+  background: var(--ck-secondary, #f1f1ef);
+}
+
+.segmentGhost,
+.segmentActive {
+  min-height: 28px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.segmentGhost {
+  background: transparent;
+  color: var(--ck-muted-foreground);
+}
+
+.segmentActive {
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  font-weight: 500;
+  box-shadow: 0 1px 2px #1718281a;
+}
+
+.formatToolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 8px 40px;
+  background: var(--ck-card);
+}
+
+.toolButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+}
+
+.toolButton:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.toolButton:not(:disabled):hover,
+.iconOnlyButton:hover,
+.crumbBack:hover,
+.mobileBack:hover {
+  background: var(--ck-muted);
+  color: var(--ck-foreground);
+}
+
+.toolbarSep {
+  width: 1px;
+  height: 18px;
+  margin: 0 1px;
+  background: var(--ck-border);
+}
+
+.scroll {
+  display: flex;
+  min-height: 0;
+  justify-content: center;
+  overflow: auto;
+  padding: 40px;
+  scrollbar-color: #c5c5c2 transparent;
+  scrollbar-width: thin;
+}
+
+.editorMeasure {
+  width: min(660px, 100%);
+}
+
+.draftFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--ck-border);
+  padding: 0 40px;
+  background: var(--ck-card);
+}
+
+.loadingLine,
+.loadingPill,
+.loadingTool,
+.loadingTab {
+  display: block;
+  border-radius: var(--ck-radius-sm);
+  background: var(--ck-muted);
+}
+
+.loadingLine {
+  width: 100%;
+  height: 13px;
+}
+
+.loadingLine[data-width='short'] {
+  width: 34%;
+}
+
+.loadingLine[data-width='medium'] {
+  width: 62%;
+}
+
+.loadingLine[data-width='wide'] {
+  width: 86%;
+}
+
+.loadingTitleBlock {
+  display: grid;
+  flex: 1;
+  gap: 12px;
+}
+
+.loadingPill {
+  width: 128px;
+  height: 32px;
+}
+
+.loadingTool {
+  width: 32px;
+  height: 32px;
+}
+
+.loadingEditorBlock {
+  display: grid;
+  width: min(660px, 100%);
+  align-content: start;
+  gap: 20px;
+}
+
+.loadingEditorBlock .loadingLine {
+  height: 17px;
+}
+
+.loadingTab {
+  width: 92px;
+  height: 16px;
+  align-self: center;
+}
+
+.loadingRightBody,
+.loadingRightFooter {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+}
+
+.loadingRightFooter {
+  border-top: 1px solid var(--ck-border);
+}
+
+.saveStatus {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 7px;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.saveStatus svg {
+  color: #15803d;
+}
+
+.saveStatus[data-state='conflict'],
+.saveStatus[data-state='error'] {
+  color: var(--ck-color-error-foreground, #b91c1c);
+}
+
+.count {
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.publishButton,
+.primaryButton {
+  min-height: 37px;
+  gap: 8px;
+  border-color: var(--ck-primary);
+  padding: 0 16px;
+  background: var(--ck-primary);
+  color: var(--ck-primary-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.secondaryButton {
+  min-height: 36px;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--ck-card);
+  font-size: 13px;
+}
+
+.rightPane {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 37px minmax(0, 1fr) 125px;
+  border-left: 1px solid var(--ck-border);
+  background: var(--ck-reader-pane);
+}
+
+.rightPaneAgent {
+  grid-template-rows: 37px minmax(0, 1fr);
+}
+
+.rightPaneAgent .railBody {
+  overflow: hidden;
+}
+
+/* Sheet variant of the rail used inside the mobile bottom sheet: fills the
+   sheet width, drops the desktop border, and lets the body flex to height. */
+.railSheetPanel {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--ck-reader-pane);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 0 10px;
+  background: var(--ck-reader-pane);
+}
+
+.tabButton,
+.tabActive {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  border: 0;
+  padding: 0 14px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tabButton {
+  color: var(--ck-muted-foreground);
+}
+
+.tabActive {
+  border-bottom: 2px solid var(--ck-primary);
+  color: var(--ck-foreground);
+  font-weight: 500;
+}
+
+.railBody {
+  min-height: 0;
+  overflow: auto;
+}
+
+.structureList,
+.notesList {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 12px;
+}
+
+.addNoteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px dashed var(--ck-border-strong);
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.addNoteButton:hover {
+  background: var(--ck-source-active, #eef0fb);
+}
+
+.structureItem,
+.structureActive,
+.addChapterButton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 32px;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 10px;
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+
+.structureLabel {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.structureActive {
+  background: var(--ck-sidebar-accent, #eaeae8);
+  color: var(--ck-foreground);
+}
+
+.structureActive svg,
+.addChapterButton {
+  color: var(--ck-primary);
+}
+
+.addChapterButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.noteCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 10px;
+  background: var(--ck-card);
+}
+
+.noteCardText {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.noteCard p {
+  margin: 0;
+  color: var(--ck-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.noteCard span {
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.noteCardActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.noteIconButton {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+}
+
+.noteIconButton:hover {
+  background: var(--ck-muted);
+  color: var(--ck-foreground);
+}
+
+.noteLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(17 17 20 / 36%);
+}
+
+.noteModal {
+  display: grid;
+  width: min(460px, calc(100vw - 32px));
+  gap: 14px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  padding: 18px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 22%);
+}
+
+.noteModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.noteModalHeader h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.noteQuote {
+  margin: 0;
+  border-left: 3px solid var(--ck-primary);
+  padding: 4px 0 4px 12px;
+  color: var(--ck-muted-foreground);
+  font-family: var(--ck-font-serif);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.noteField {
+  display: grid;
+  gap: 8px;
+  color: var(--ck-muted-foreground);
+  font-size: 13px;
+}
+
+.noteField textarea {
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 10px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  font: inherit;
+}
+
+.noteModalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #dc2626;
+  border-radius: var(--ck-radius-sm);
+  background: #dc2626;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.displaySettings {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--ck-border);
+  padding: 16px;
+  background: var(--ck-reader-pane);
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--ck-radius-md);
+  padding: 3px;
+  background: var(--ck-secondary, #f1f1ef);
+}
+
+.stepper button {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-muted-foreground);
+  cursor: pointer;
+}
+
+.stepper button:last-child {
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  box-shadow: 0 1px 2px #1718281a;
+}
+
+.stepper span {
+  display: inline-grid;
+  width: 40px;
+  height: 28px;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.themeDots {
+  display: flex;
+  gap: 8px;
+}
+
+.themeDotLight,
+.themeDotSepia,
+.themeDotDark,
+.themeDotActive {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ck-border-strong);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.themeDotLight,
+.themeDotActive {
+  background: #ffffff;
+}
+
+.themeDotSepia {
+  background: #f4ecd8;
+}
+
+.themeDotDark {
+  background: #2e2e2e;
+}
+
+.themeDotActive {
+  border: 2px solid var(--ck-primary);
+}
+
+.notice {
+  position: absolute;
+  right: 356px;
+  bottom: 72px;
+  z-index: 40;
+  max-width: 360px;
+  margin: 0;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  padding: 10px 12px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  box-shadow: 0 16px 40px #1718281f;
+  font-size: 13px;
+}
+
+.conflictBanner {
+  position: absolute;
+  right: 356px;
+  bottom: 120px;
+  z-index: 41;
+  display: grid;
+  max-width: 380px;
+  gap: 10px;
+  margin: 0;
+  border: 1px solid var(--ck-color-warning-foreground, #92740e);
+  border-radius: var(--ck-radius-md);
+  padding: 12px 14px;
+  background: var(--ck-color-warning, #fef3c7);
+  color: var(--ck-foreground);
+  box-shadow: 0 16px 40px #1718281f;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.conflictActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.searchPanel {
+  position: absolute;
+  top: 76px;
+  left: 50%;
+  z-index: 50;
+  width: min(560px, calc(100vw - 48px));
+  transform: translateX(-50%);
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-md);
+  padding: 10px;
+  background: var(--ck-card);
+  box-shadow: 0 24px 64px #17182824;
+}
+
+.searchForm {
+  display: flex;
+  gap: 8px;
+}
+
+.searchForm input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+}
+
+.searchResults {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.searchResult {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--ck-border);
+  border-radius: var(--ck-radius-sm);
+  padding: 10px;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchResult span,
+.searchResult p {
+  margin: 0;
+  color: var(--ck-muted-foreground);
+  font-size: 12px;
+}
+
+.statePage {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 14px;
+  padding: 32px;
+  background: var(--ck-background);
+  color: var(--ck-foreground);
+}
+
+.mobileSurface {
+  display: grid;
+  height: 100vh;
+  grid-template-rows: 52px 50px minmax(0, 1fr) 52px;
+  overflow: hidden;
+  background: var(--ck-card);
+  color: var(--ck-foreground);
+}
+
+/* Reading mode hides the mobile format bar; drop its grid row. */
+.mobileSurfaceReading {
+  grid-template-rows: 52px 50px minmax(0, 1fr);
+}
+
+.mobileTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 0 8px;
+  background: var(--ck-card);
+}
+
+.mobileTitleWrap {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobileBack {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-foreground);
+}
+
+.mobileTitleWrap h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobilePublish {
+  min-height: 30px;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  padding: 0 12px;
+  background: var(--ck-primary);
+  color: var(--ck-primary-foreground);
+  font-size: 13px;
+}
+
+.mobileTopActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobilePanelButton {
+  position: relative;
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--ck-radius-sm);
+  background: transparent;
+  color: var(--ck-foreground);
+  cursor: pointer;
+}
+
+.mobilePanelButton:hover {
+  background: var(--ck-muted);
+}
+
+.mobilePanelBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 999px;
+  padding: 0 4px;
+  background: var(--ck-primary);
+  color: var(--ck-primary-foreground);
+  font-family: var(--ck-font-mono);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.mobileSheetScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(17 17 20 / 36%);
+}
+
+.mobileSheetScrim > [data-kind='sheet'] {
+  width: 100%;
+}
+
+.mobileSheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  max-height: 82vh;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  background: var(--ck-reader-pane);
+  color: var(--ck-foreground);
+  box-shadow: 0 -16px 44px rgb(0 0 0 / 26%);
+}
+
+.mobileSheetHandle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 10px 0 8px;
+}
+
+.mobileSheetGrip {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ck-border-strong);
+}
+
+.mobileSheetHandle .noteIconButton {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+
+.mobileSubbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ck-border);
+  padding: 8px 16px;
+  background: var(--ck-card);
+}
+
+.mobileSubbar span {
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-mono);
+  font-size: 11px;
+}
+
+.mobileEditor {
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+}
+
+.mobileNotice {
+  margin: 14px 0 0;
+  color: var(--ck-subtle-foreground, #767c87);
+  font-family: var(--ck-font-serif);
+  font-size: 17px;
+  font-style: italic;
+}
+
+.mobileNotice {
+  margin: 0 0 12px;
+  font-family: var(--ck-font-sans);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.mobileFormatBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--ck-border);
+  padding: 0 16px;
+  background: var(--ck-card);
+}
+
+.mobileFormatBar .toolButton {
+  color: var(--ck-muted-foreground);
+}
+
+.mobileFormatBar .toolButton:last-child {
+  width: 36px;
+  height: 36px;
+  color: var(--ck-primary);
+}
+
+@media (max-width: 1100px) {
+  /* The shared ProjectSidebar hides itself below this breakpoint, so the draft
+     collapses to editor + rail (the loading skeleton sidebar hides too). */
+  .body {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .sidebar {
+    display: none;
+  }
+}

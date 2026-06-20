@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+  background: var(--ck-background);
+  font-family: var(--ck-font-sans);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--ck-background);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ck-primary);
+  outline-offset: 2px;
+}
+
+/* ---- Motion ---------------------------------------------------------------
+   Overlays (modals/drawers/sheets/menus) and popovers animate in and out via
+   the global [data-state] / [data-kind] / [data-overlay-scrim] / [data-pop]
+   attributes set by the shared Overlay + usePresence primitives. Keeping the
+   keyframes here means every surface animates consistently with zero per-page
+   CSS. Honors prefers-reduced-motion at the bottom. */
+
+@keyframes ck-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ck-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes ck-scale-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ck-scale-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
+
+@keyframes ck-pop-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ck-pop-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-6px) scale(0.97); }
+}
+
+@keyframes ck-slide-left-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+
+@keyframes ck-slide-left-out {
+  from { transform: none; }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes ck-slide-up-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@keyframes ck-slide-up-out {
+  from { transform: none; }
+  to { transform: translateY(100%); }
+}
+
+@keyframes ck-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Variants for popovers that keep a horizontal centering transform. */
+@keyframes ck-pop-center-in {
+  from { opacity: 0; transform: translate(-50%, -6px) scale(0.97); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+@keyframes ck-pop-center-out {
+  from { opacity: 1; transform: translateX(-50%); }
+  to { opacity: 0; transform: translate(-50%, -6px) scale(0.97); }
+}
+
+/* Scrim backdrop fade */
+[data-overlay-scrim] {
+  animation: ck-fade-in var(--ck-duration-base) var(--ck-ease-out);
+}
+
+[data-overlay-scrim][data-state='closing'] {
+  animation: ck-fade-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+/* Overlay panels, keyed on kind */
+[data-kind='dialog'][data-state='open'] {
+  animation: ck-scale-in var(--ck-duration-base) var(--ck-ease-out);
+}
+
+[data-kind='dialog'][data-state='closing'] {
+  animation: ck-scale-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+/* Menu panels are position:fixed, so a transform on this wrapper would change
+   their containing block — animate opacity only to keep anchoring stable. */
+[data-kind='menu'][data-state='open'] {
+  animation: ck-fade-in var(--ck-duration-fast) var(--ck-ease-out);
+}
+
+[data-kind='menu'][data-state='closing'] {
+  animation: ck-fade-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+[data-kind='drawer'][data-state='open'] {
+  animation: ck-slide-left-in var(--ck-duration-base) var(--ck-ease-standard);
+}
+
+[data-kind='drawer'][data-state='closing'] {
+  animation: ck-slide-left-out var(--ck-duration-base) var(--ck-ease-standard) forwards;
+}
+
+[data-kind='sheet'][data-state='open'] {
+  animation: ck-slide-up-in var(--ck-duration-slow) var(--ck-ease-standard);
+}
+
+[data-kind='sheet'][data-state='closing'] {
+  animation: ck-slide-up-out var(--ck-duration-base) var(--ck-ease-standard) forwards;
+}
+
+[data-kind='fullscreen'][data-state='open'] {
+  animation: ck-fade-in var(--ck-duration-base) var(--ck-ease-out);
+}
+
+[data-kind='fullscreen'][data-state='closing'] {
+  animation: ck-fade-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+/* Inline anchored popovers (search, project, account menus) */
+[data-pop] {
+  transform-origin: top;
+}
+
+[data-pop][data-state='open'] {
+  animation: ck-pop-in var(--ck-duration-fast) var(--ck-ease-out);
+}
+
+[data-pop][data-state='closing'] {
+  animation: ck-pop-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+[data-pop='center'][data-state='open'] {
+  animation: ck-pop-center-in var(--ck-duration-fast) var(--ck-ease-out);
+}
+
+[data-pop='center'][data-state='closing'] {
+  animation: ck-pop-center-out var(--ck-duration-fast) var(--ck-ease-in) forwards;
+}
+
+/* Smooth every interactive state change (hover/focus/press) app-wide. Only
+   color-ish + shadow + transform are transitioned, so layout is never affected. */
+button,
+a,
+input,
+textarea,
+select,
+summary,
+[role='button'] {
+  transition:
+    background-color var(--ck-duration-fast) var(--ck-ease-out),
+    border-color var(--ck-duration-fast) var(--ck-ease-out),
+    color var(--ck-duration-fast) var(--ck-ease-out),
+    box-shadow var(--ck-duration-fast) var(--ck-ease-out),
+    transform var(--ck-duration-fast) var(--ck-ease-out),
+    opacity var(--ck-duration-fast) var(--ck-ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
