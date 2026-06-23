@@ -52,7 +52,7 @@ describe('ManuscriptPage', () => {
 
   it('shows cancel errors without leaving the manuscript shelf', async () => {
     renderManuscript('?indexing=active', (api) => {
-      vi.spyOn(api, 'cancelIndexingJob').mockRejectedValueOnce(new Error('Индексация уже завершилась.'));
+      vi.spyOn(api, 'cancelJob').mockRejectedValueOnce(new Error('Индексация уже завершилась.'));
     });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Отменить индексацию' }));
@@ -148,11 +148,11 @@ describe('ManuscriptPage', () => {
 
   it('reports export ready and error outcomes from export jobs', async () => {
     const { api } = renderManuscript('?bookMenu=open&bookId=book-02');
-    const getExportJob = api.getExportJob.bind(api);
-    vi.spyOn(api, 'getExportJob').mockImplementationOnce(async (id) => ({
-      ...(await getExportJob(id)),
-      status: 'ready',
-      downloadUrl: '/mock-downloads/book.epub',
+    const getJob = api.getJob.bind(api);
+    vi.spyOn(api, 'getJob').mockImplementationOnce(async (id) => ({
+      ...(await getJob(id)),
+      status: 'succeeded',
+      result: { type: 'export', bookId: 'book-02', format: 'epub', downloadUrl: '/api/v1/mock-downloads/book.epub' },
     }));
 
     await screen.findByRole('menu', { name: 'Действия книги' });
@@ -160,14 +160,63 @@ describe('ManuscriptPage', () => {
     expect(await screen.findByText(/Экспорт EPUB готов/)).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole('menu', { name: 'Действия книги' })).toBeNull());
 
-    vi.spyOn(api, 'getExportJob').mockImplementationOnce(async (id) => ({
-      ...(await getExportJob(id)),
+    vi.spyOn(api, 'getJob').mockImplementationOnce(async (id) => ({
+      ...(await getJob(id)),
       status: 'failed',
-      errorMessage: 'Экспорт временно недоступен.',
+      result: { type: 'export', bookId: 'book-02', format: 'fb2', errorMessage: 'Экспорт временно недоступен.' },
     }));
     fireEvent.click(screen.getByRole('button', { name: 'Действия книги Книга II. Карта приливов' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Экспорт в FB2' }));
     expect(await screen.findByText(/Экспорт FB2 не удался/)).toBeTruthy();
+  });
+
+  it('hides export actions from project editors', async () => {
+    const { api } = renderManuscript('?bookMenu=open&bookId=book-02', (client) => {
+      client.setScenario({ preset: 'normal', actorRole: 'editor' });
+      vi.spyOn(client, 'getCurrentUser').mockResolvedValueOnce({
+        id: 'user-editor',
+        email: 'editor@example.test',
+        emailVerified: true,
+        displayName: 'Редактор',
+        avatarUrl: null,
+        createdAt: '2026-06-16T05:00:00.000Z',
+      });
+    });
+    const createBookExport = vi.spyOn(api, 'createBookExport');
+
+    const menu = await screen.findByRole('menu', { name: 'Действия книги' });
+    expect(within(menu).getByRole('button', { name: 'Экспорт доступен владельцу или администратору' })).toHaveProperty('disabled', true);
+    expect(within(menu).queryByRole('button', { name: 'Экспорт в EPUB' })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: 'Экспорт в FB2' })).toBeNull();
+    expect(createBookExport).not.toHaveBeenCalled();
+  });
+
+  it('keeps manuscript shelf read-only for project viewers', async () => {
+    const { navigate } = renderManuscript('?bookMenu=open&bookId=book-02', (api) => {
+      api.setScenario({ preset: 'normal', actorRole: 'viewer' });
+    });
+
+    await screen.findByText('Книга II. Карта приливов');
+    expect(screen.getByRole('button', { name: 'Загрузить файл' })).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText('Файл рукописи FB2 или EPUB')).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Новая книга' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Новый чат' })).toHaveProperty('disabled', true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Открыть чтение Книга II. Карта приливов' }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(
+        '/manuscript/books',
+        expect.objectContaining({ bookId: 'book-02', mode: 'read', projectId: 'project-white-port' }),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Действия книги Книга II. Карта приливов' }));
+    const menu = await screen.findByRole('menu', { name: 'Действия книги' });
+    expect(within(menu).getByRole('button', { name: 'Открыть чтение' })).toBeTruthy();
+    expect(within(menu).getByRole('button', { name: 'Редактирование доступно редактору или администратору' })).toHaveProperty('disabled', true);
+    expect(within(menu).queryByRole('button', { name: 'Открыть редактор' })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: 'Новая глава' })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: 'Удалить книгу' })).toBeNull();
   });
 
   it('runs create, import and delete book transitions', async () => {
@@ -193,10 +242,12 @@ describe('ManuscriptPage', () => {
 
     await screen.findByText('Книга II. Карта приливов');
     vi.spyOn(api, 'getImportConstraints').mockRejectedValueOnce(new Error('Не удалось импортировать книгу.'));
+    const importBookFile = vi.spyOn(api, 'importBookFile');
     const failedImportFile = new File(['<book/>'], 'northern-court.epub', { type: 'application/epub+zip' });
     fireEvent.change(screen.getByLabelText('Файл рукописи FB2 или EPUB'), { target: { files: [failedImportFile] } });
 
     expect(await screen.findByText('Не удалось импортировать книгу.')).toBeTruthy();
+    expect(importBookFile).not.toHaveBeenCalled();
     expect(screen.getByText('Книга II. Карта приливов')).toBeTruthy();
 
     vi.spyOn(api, 'deleteBook').mockRejectedValueOnce(new Error('Не удалось удалить книгу.'));
@@ -208,6 +259,18 @@ describe('ManuscriptPage', () => {
     expect(await screen.findByText('Не удалось удалить книгу.')).toBeTruthy();
     expect(screen.getByRole('dialog', { name: 'Удалить книгу' })).toBeTruthy();
     expect(screen.getByText('Книга II. Карта приливов')).toBeTruthy();
+  });
+
+  it('shows a no-project empty state with disabled manuscript creation controls', async () => {
+    renderManuscript('', (api) => {
+      api.setScenario({ preset: 'normal', actorRole: 'non_member' });
+    });
+
+    expect(await screen.findByText('У вас пока нет доступных проектов. Примите приглашение или создайте проект, чтобы начать рукопись.')).toBeTruthy();
+    expect(screen.queryByText('В саге пока нет книг.')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Загрузить файл' })).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText('Файл рукописи FB2 или EPUB')).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Новая книга' })).toHaveProperty('disabled', true);
   });
 
   it('uses project chat session select and create through the API boundary', async () => {

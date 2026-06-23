@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage, ReaderLocator } from '../../entities/chat/api';
-import { extractArtifactId, getArtifactTriggerIds, sameLocator, stripInlineTriggers } from '../../entities/chat/model';
+import { getArtifactReferenceIds, sameLocator } from '../../entities/chat/model';
 import { appendStreamEvent, resolveReaderMode, toModalMode, toReaderMode } from './chat-model';
 
 describe('chat model', () => {
-  it('extracts reader reference trigger ids from chat messages', () => {
+  it('extracts reader artifact reference ids from chat messages', () => {
     const message = {
-      triggers: [{ kind: 'reader_references', artifactId: 'artifact-1' }, { kind: 'tool_call' }, { artifactId: 'artifact-2' }],
+      references: [{ kind: 'reader_reference_artifact', artifactId: 'artifact-1' }, { kind: 'tool_call' }, { artifactId: 'artifact-2' }],
     } as unknown as ChatMessage;
 
-    expect(getArtifactTriggerIds(message)).toEqual(['artifact-1', 'artifact-2']);
+    expect(getArtifactReferenceIds(message)).toEqual(['artifact-1', 'artifact-2']);
   });
 
   it('keeps stream activity bounded', () => {
@@ -18,7 +18,7 @@ describe('chat model', () => {
     expect(appendStreamEvent(events, 'seven')).toEqual(['two', 'three', 'four', 'five', 'six', 'seven']);
   });
 
-  it('parses modes and artifact ids deterministically', () => {
+  it('parses reader and modal modes deterministically', () => {
     expect(toReaderMode('drawer')).toBe('drawer');
     expect(toReaderMode('sidecar')).toBeNull();
     expect(toModalMode('rename-chat')).toBe('rename-chat');
@@ -26,17 +26,6 @@ describe('chat model', () => {
     expect(resolveReaderMode(390)).toBe('fullscreen');
     expect(resolveReaderMode(1024)).toBe('drawer');
     expect(resolveReaderMode(1440)).toBe('open');
-    expect(extractArtifactId('artifactId="artifact-reader-references-1"')).toBe('artifact-reader-references-1');
-    expect(extractArtifactId('artifactId=\\"artifact-reader-references-2\\"')).toBe('artifact-reader-references-2');
-  });
-
-  it('removes internal trigger markers from visible stream text', () => {
-    expect(stripInlineTriggers('Готово. ::ck-trigger{kind="reader_references" artifactId="artifact-reader-references-1"}')).toBe(
-      'Готово.',
-    );
-    expect(stripInlineTriggers('Готово. ::ck-trigger{kind=\\"reader_references\\" artifactId=\\"artifact-reader-references-2\\"}')).toBe(
-      'Готово.',
-    );
   });
 
   it('compares reader locators including nullable paragraph ids', () => {

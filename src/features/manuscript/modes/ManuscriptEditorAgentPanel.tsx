@@ -6,6 +6,7 @@ import styles from './ManuscriptEditorAgentPanel.module.css';
 type AgentPanelStatus = 'idle' | 'loading' | 'error';
 
 interface ManuscriptEditorAgentPanelProps {
+  canEdit: boolean;
   composerValue: string;
   draftTitle: string;
   notice: string;
@@ -29,6 +30,7 @@ const kindLabels: Record<AgentSuggestion['kind'], string> = {
 };
 
 export function ManuscriptEditorAgentPanel({
+  canEdit,
   composerValue,
   draftTitle,
   notice,
@@ -90,11 +92,11 @@ export function ManuscriptEditorAgentPanel({
                 </p>
               ) : null}
               <div className={styles.actions}>
-                <button className={styles.rejectButton} disabled={busy} onClick={() => onReject(suggestion)} type="button">
+                <button className={styles.rejectButton} disabled={!canEdit || busy} onClick={() => onReject(suggestion)} type="button">
                   <X aria-hidden="true" size={15} />
                   Отклонить
                 </button>
-                <button className={styles.applyButton} disabled={busy} onClick={() => onApprove(suggestion)} type="button">
+                <button className={styles.applyButton} disabled={!canEdit || busy} onClick={() => onApprove(suggestion)} type="button">
                   <Check aria-hidden="true" size={15} />
                   Применить
                 </button>
@@ -108,11 +110,12 @@ export function ManuscriptEditorAgentPanel({
       <form className={styles.composer} onSubmit={onSendMessage}>
         <input
           aria-label="Сообщение редакторскому агенту"
+          disabled={!canEdit}
           onChange={(event) => onChangeComposer(event.target.value)}
-          placeholder="Попросите проверить сцену..."
+          placeholder={canEdit ? 'Попросите проверить сцену...' : 'У вас доступ только для чтения'}
           value={composerValue}
         />
-        <button aria-label="Отправить редакторскому агенту" className={styles.sendButton} disabled={!composerValue.trim() || requesting} type="submit">
+        <button aria-label="Отправить редакторскому агенту" className={styles.sendButton} disabled={!canEdit || !composerValue.trim() || requesting} type="submit">
           <Send aria-hidden="true" size={17} />
         </button>
       </form>

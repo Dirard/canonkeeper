@@ -68,7 +68,12 @@ export function AuthPage({
       setMessage(requestedPath ? `Готово. Возвращаемся: ${requestedPath}` : 'Готово. Открываем рабочее место.');
       onSuccess(session);
     } catch (error) {
-      setMessage(classifyAuthFailure(error, 'Не удалось войти. Проверьте данные и попробуйте снова.').message);
+      setMessage(
+        classifyAuthFailure(
+          error,
+          isRegister ? 'Не удалось создать аккаунт. Проверьте данные и попробуйте снова.' : 'Не удалось войти. Проверьте данные и попробуйте снова.',
+        ).message,
+      );
     }
   }
 

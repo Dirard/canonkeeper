@@ -45,10 +45,10 @@ npm run build
 
 - The mock server is local-only development/test infrastructure, not a product runtime fallback.
 - Auth uses the OpenAPI cookie session shape; local proof logs must not store passwords, cookies, tokens, request bodies or raw SSE frames.
-- Chat streaming uses `POST /api/v1/chats/{chatId}/messages` with `text/event-stream`.
+- Chat streaming uses `POST /api/v1/chats/{chatId}/turns` for the command and `GET /api/v1/chat-turns/{turnId}/events` for resumable `text/event-stream`.
 - Import/export use deterministic fake metadata/jobs/URLs in this frontend repair; real parsing, storage and file generation are backend scope.
 - `MOCK_RETURN_STATUS` and `mock_return_status` are test harness controls only. Do not expose scenario/reset/debug controls in the product UI.
 
 ## Evidence
 
-The Supergoal repair evidence lives under `.supergoal/new-repair-run-for-production-ready-main-Ptuv5B`. The final proof matrix, visual screenshots, browser smoke proof, command logs and audit files are stored there for review.
+The Supergoal repair evidence lives under `.supergoal/openapi-backend-first-contract-revision-rmkqHC`. The repo-visible proof package is `contracts/openapi-review-matrix.md`, `contracts/openapi-security-matrix.md`, `contracts/openapi-migration.md`, `contracts/openapi-baseline-inventory.json`, and the deterministic `npm run contract:check` output.

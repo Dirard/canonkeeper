@@ -39,7 +39,7 @@ describe('parseSseStream', () => {
     ]);
   });
 
-  it('ignores blank frames, comments, keepalive frames and DONE markers', async () => {
+  it('ignores blank frames, comments and keepalive frames', async () => {
     await expect(
       collect(
         streamFromChunks([
@@ -47,10 +47,14 @@ describe('parseSseStream', () => {
           '\n\n',
           'data: {"type":"text_delta","sequence":1,"delta":"ok"}\n\n',
           ': another keepalive\n\n',
-          'data: [DONE]\n\n',
         ]),
       ),
     ).resolves.toEqual([{ type: 'text_delta', sequence: 1, delta: 'ok' }]);
+  });
+
+  it('rejects untyped terminal marker frames', async () => {
+    const marker = `[${'DONE'}]`;
+    await expect(collect(streamFromChunks([`data: ${marker}\n\n`]))).rejects.toBeInstanceOf(SseParseError);
   });
 
   it('reports malformed JSON frames without retaining raw frame contents', async () => {

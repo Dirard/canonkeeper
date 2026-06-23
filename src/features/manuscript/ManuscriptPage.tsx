@@ -19,7 +19,7 @@ import {
 import { createPortal } from 'react-dom';
 import { type ChangeEvent, type DragEvent, type KeyboardEvent, type PointerEvent, type ReactNode, lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { publicApiErrorMessage } from '../../entities/api-errors';
-import type { Book, ChatSession, ExportJob, IndexingJob, ManuscriptApiClient, Project, ReaderLocator, SearchScope } from '../../entities/manuscript/api';
+import type { Book, ChatSession, ManuscriptApiClient, Project, ProjectJob, ReaderLocator, SearchScope } from '../../entities/manuscript/api';
 import * as manuscriptApi from '../../entities/manuscript/api';
 import type { AppRoute } from '../../shared/navigation/app-route';
 import { formatProjectMeta } from '../../ui/copy';
@@ -77,7 +77,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [books, setBooks] = useState<Book[]>([]);
-  const [jobs, setJobs] = useState<IndexingJob[]>([]);
+  const [canCreateChats, setCanCreateChats] = useState(false);
+  const [canEditManuscript, setCanEditManuscript] = useState(false);
+  const [canExportBooks, setCanExportBooks] = useState(false);
+  const [jobs, setJobs] = useState<ProjectJob[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState(route.query.get('chatId') ?? '');
   const [selectedBookId, setSelectedBookId] = useState(route.query.get('bookId') ?? '');
@@ -109,7 +112,7 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
   const updateBookMutation = manuscriptApi.useUpdateBookMutation(api);
   const deleteBookMutation = manuscriptApi.useDeleteBookMutation(api);
   const importBookMutation = manuscriptApi.useImportBookMutation(api);
-  const cancelIndexingMutation = manuscriptApi.useCancelIndexingJobMutation(api);
+  const cancelJobMutation = manuscriptApi.useCancelJobMutation(api);
   const exportBookMutation = manuscriptApi.useExportBookMutation(api);
   const searchProjectMutation = manuscriptApi.useSearchProjectMutation(api);
   const selectProjectMutation = manuscriptApi.useGetProjectMutation(api);
@@ -124,6 +127,9 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   useEffect(() => {
     if (shelfQuery.isPending) {
+      setCanCreateChats(false);
+      setCanEditManuscript(false);
+      setCanExportBooks(false);
       setStatus('loading');
       setSessionStatus('loading');
       setError('');
@@ -131,6 +137,9 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
     }
 
     if (shelfQuery.isError) {
+      setCanCreateChats(false);
+      setCanEditManuscript(false);
+      setCanExportBooks(false);
       setStatus('error');
       setSessionStatus('error');
       setError(formatError(shelfQuery.error, 'Не удалось загрузить рукопись.'));
@@ -142,6 +151,9 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
     if (!workspace.project) {
       setProject(null);
       setBooks([]);
+      setCanCreateChats(false);
+      setCanEditManuscript(false);
+      setCanExportBooks(false);
       setJobs([]);
       setSessions([]);
       setStatus('empty');
@@ -151,20 +163,34 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
     setProject(workspace.project);
     setBooks(workspace.books);
+    setCanCreateChats(workspace.canCreateChats);
+    setCanEditManuscript(workspace.canEditManuscript);
+    setCanExportBooks(workspace.canExportBooks);
     setJobs(workspace.jobs);
     setSessions(workspace.sessions);
     setActiveChatId((current) => workspace.sessions.find((chat) => chat.id === current)?.id ?? workspace.sessions[0]?.id ?? '');
     setSessionStatus(workspace.sessions.length > 0 ? 'ready' : 'empty');
     setSelectedBookId((current) => {
-      const candidate = current || workspace.project?.activeBookId || '';
-      return workspace.books.find((book) => book.id === candidate)?.id ?? workspace.books[0]?.id ?? '';
+      const candidate = current || '';
+      const preferredBook =
+        workspace.books
+          .filter((book) => book.status === 'ready')
+          .sort((left, right) => right.chapterCount - left.chapterCount || left.order - right.order)[0] ?? workspace.books[0];
+      return workspace.books.find((book) => book.id === candidate)?.id ?? preferredBook?.id ?? '';
     });
     setStatus(workspace.books.length > 0 ? 'ready' : 'empty');
   }, [shelfQuery.data, shelfQuery.error, shelfQuery.isError, shelfQuery.isPending]);
 
   const selectedBook = books.find((book) => book.id === selectedBookId) ?? books[0] ?? null;
   const menuBook = books.find((book) => book.id === menuBookId) ?? selectedBook;
-  const activeJob = jobs.find((job) => job.status === 'running' || job.status === 'queued') ?? null;
+  const activeJob = jobs.find((job) => (job.kind === 'import' || job.kind === 'indexing') && (job.status === 'running' || job.status === 'queued')) ?? null;
+  const activeBookJobFor = (bookId: string) =>
+    jobs.find(
+      (job) =>
+        (job.kind === 'import' || job.kind === 'indexing') &&
+        (job.status === 'running' || job.status === 'queued') &&
+        activeJobBookId(job) === bookId,
+    ) ?? null;
   const showIndexing = activeJob;
 
   async function refreshBooks(projectId = project?.id) {
@@ -204,17 +230,17 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
     if (!book) return;
     try {
       const { book: freshBook, chapters } = await openBookMutation.mutateAsync(book.id);
-      const chapter = chapters.find((item) => item.isCurrent) ?? chapters[0];
+      const chapter = chapters[0];
       if (!chapter) {
         if (mode === 'draft') {
           openNewChapter(freshBook);
           return;
         }
-        setNotice(`В ${freshBook.displayLabel} пока нет глав для чтения.`);
+        setNotice(`В ${bookLabel(freshBook)} пока нет глав для чтения.`);
         setMenuBookId(null);
         return;
       }
-      setNotice(`Открываем ${freshBook.displayLabel}: ${chapter.title}.`);
+      setNotice(`Открываем ${bookLabel(freshBook)}: ${chapter.title}.`);
       setMenuBookId(null);
       navigate('/manuscript/books', {
         projectId: freshBook.projectId,
@@ -229,6 +255,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
   }
 
   function openNewChapter(book = selectedBook) {
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     if (!book) {
       setNotice('Выберите книгу, чтобы создать главу.');
       return;
@@ -244,6 +274,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function createBook() {
     if (!project) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     setNotice('Создаем книгу...');
     try {
       const created = await createBookMutation.mutateAsync({
@@ -260,6 +294,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function changeCover(book = selectedBook) {
     if (!book) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     setNotice('Обновляем обложку...');
     const currentIndex = coverPalette.indexOf(book.coverColor ?? '');
     const nextColor = coverPalette[(currentIndex + 1) % coverPalette.length] ?? '#4F46E5';
@@ -277,6 +315,12 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function deleteBook(book = selectedBook) {
     if (!book) return;
+    if (!canEditManuscript) {
+      setDeleteConfirmOpen(false);
+      setMenuBookId(null);
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     try {
       await deleteBookMutation.mutateAsync(book.id);
       const remaining = books.filter((item) => item.id !== book.id);
@@ -293,6 +337,14 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
   }
 
   function chooseImportFile() {
+    if (!project) {
+      setNotice('Нет доступного проекта для загрузки рукописи.');
+      return;
+    }
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     fileInputRef.current?.click();
   }
 
@@ -307,6 +359,14 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
   function handleDropZoneDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     setDragActive(false);
+    if (!project) {
+      setNotice('Нет доступного проекта для загрузки рукописи.');
+      return;
+    }
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     const file = event.dataTransfer.files?.[0];
     if (file) {
       void importBook(file);
@@ -315,6 +375,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function importBook(file: File) {
     if (!project) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     const lowerName = file.name.toLowerCase();
     if (!lowerName.endsWith('.fb2') && !lowerName.endsWith('.epub')) {
       setNotice('Поддерживаются только файлы FB2 и EPUB.');
@@ -324,8 +388,9 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
     try {
       const title = file.name.replace(/\.(fb2|epub)$/i, '');
       const { constraints, job } = await importBookMutation.mutateAsync({
+        body: { file, metadata: { title, sourceFileName: file.name } },
+        idempotencyKey: manuscriptApi.createIdempotencyKey('importBookFile'),
         projectId: project.id,
-        body: { file, title },
       });
       setJobs((current) => [job, ...current]);
       await refreshBooks(project.id);
@@ -335,11 +400,15 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
     }
   }
 
-  async function cancelIndexing() {
+  async function cancelActiveJob() {
     if (!activeJob) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     setNotice('Отменяем индексацию...');
     try {
-      const reconciled = await cancelIndexingMutation.mutateAsync(activeJob.id);
+      const reconciled = await cancelJobMutation.mutateAsync(activeJob.id);
       setJobs((current) => current.map((job) => (job.id === reconciled.id ? reconciled : job)));
       await refreshBooks();
       setNotice('Индексация отменена, контекст полки сохранен.');
@@ -350,18 +419,34 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function exportBook(format: 'fb2' | 'epub', book = selectedBook) {
     if (!book) return;
+    if (!canExportBooks) {
+      setMenuBookId(null);
+      setNotice('Экспорт доступен владельцу или администратору проекта.');
+      return;
+    }
     setNotice(`Готовим экспорт ${format.toUpperCase()}...`);
     try {
-      const job: ExportJob = await exportBookMutation.mutateAsync({ bookId: book.id, format });
-      if (job.status === 'ready' && job.downloadUrl) {
-        downloadExport(job.downloadUrl, `${shortBookTitle(book.title)}.${format}`);
+      const job = await exportBookMutation.mutateAsync({
+        bookId: book.id,
+        format,
+        idempotencyKey: manuscriptApi.createIdempotencyKey('createBookExport'),
+      });
+      const downloadUrl = stringJobResult(job, 'downloadUrl');
+      if (job.status === 'succeeded' && downloadUrl) {
+        downloadExport(downloadUrl, `${shortBookTitle(book.title)}.${format}`);
       }
+      const errorMessage = job.error?.detail ?? stringJobResult(job, 'errorMessage');
+      const formatLabel = format.toUpperCase();
       const label =
-        job.status === 'ready'
-          ? `Экспорт ${format.toUpperCase()} готов — файл загружается.`
+        job.status === 'succeeded'
+          ? `Экспорт ${formatLabel} готов — файл загружается.`
           : job.status === 'failed'
-            ? `Экспорт ${format.toUpperCase()} не удался${job.errorMessage ? `: ${job.errorMessage}` : '.'}`
-            : `Экспорт ${format.toUpperCase()} запущен.`;
+            ? `Экспорт ${formatLabel} не удался${errorMessage ? `: ${errorMessage}` : '.'}`
+            : job.status === 'canceled'
+              ? `Экспорт ${formatLabel} отменён.`
+              : job.status === 'expired'
+                ? `Ссылка на экспорт ${formatLabel} истекла — запустите заново.`
+                : `Экспорт ${formatLabel} запущен.`;
       setSelectedBookId(book.id);
       setMenuBookId(null);
       setNotice(label);
@@ -406,6 +491,10 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 
   async function createChat() {
     if (!project) return;
+    if (!canCreateChats) {
+      setChatNotice('Создание чатов доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     setChatNotice('');
     setSessionStatus('loading');
     try {
@@ -545,6 +634,7 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
         <ProjectSidebar
           active="manuscript"
           activeChatId={activeChatId}
+          canCreateChat={canCreateChats}
           chatNotice={chatNotice}
           onChat={() => {
             if (activeChatId) {
@@ -585,7 +675,7 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
               <p className={styles.projectMeta}>{projectMeta}</p>
             </div>
             <div className={styles.topActions}>
-              <button className={styles.uploadButton} onClick={chooseImportFile} type="button">
+              <button className={styles.uploadButton} disabled={!project || !canEditManuscript} onClick={chooseImportFile} type="button">
                 <FileUp aria-hidden="true" size={17} />
                 Загрузить файл
               </button>
@@ -593,20 +683,22 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
                 accept=".fb2,.epub"
                 aria-label="Файл рукописи FB2 или EPUB"
                 className={styles.fileInput}
+                disabled={!project || !canEditManuscript}
                 onChange={handleImportInputChange}
                 ref={fileInputRef}
                 type="file"
               />
-              <button className={styles.primaryButton} onClick={() => void createBook()} type="button">
+              <button className={styles.primaryButton} disabled={!project || !canEditManuscript} onClick={() => void createBook()} type="button">
                 <Plus aria-hidden="true" size={17} />
                 Новая книга
               </button>
             </div>
           </div>
 
-          {showIndexing ? <IndexingBanner job={activeJob} onCancel={() => void cancelIndexing()} /> : null}
+          {showIndexing ? <IndexingBanner canCancel={canEditManuscript} job={activeJob} onCancel={() => void cancelActiveJob()} /> : null}
           {status === 'loading' ? <p className={styles.notice}>Загружаем книги...</p> : null}
-          {status === 'empty' ? <p className={styles.notice}>В саге пока нет книг.</p> : null}
+          {status === 'empty' && project ? <p className={styles.notice}>В саге пока нет книг.</p> : null}
+          {status === 'empty' && !project ? <p className={styles.notice}>У вас пока нет доступных проектов. Примите приглашение или создайте проект, чтобы начать рукопись.</p> : null}
           {status === 'error' ? <p className={styles.notice}>{error}</p> : null}
           {notice ? <p className={styles.notice}>{notice}</p> : null}
 
@@ -614,11 +706,14 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
           <div className={styles.booksGrid}>
             {books.map((book) => (
               <BookCard
+                activeJob={activeBookJobFor(book.id)}
                 book={book}
+                canEditManuscript={canEditManuscript}
                 isActive={book.id === selectedBookId}
                 key={book.id}
                 onOpenMenu={(trigger) => openBookMenu(book.id, trigger)}
                 onOpen={() => void openBook(book, 'draft')}
+                onOpenRead={() => void openBook(book, 'read')}
                 onSelect={() => setSelectedBookId(book.id)}
               />
             ))}
@@ -633,6 +728,7 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
               setDragActive(true);
             }}
             onDrop={handleDropZoneDrop}
+            disabled={!project || !canEditManuscript}
             type="button"
           >
             <span>
@@ -658,6 +754,8 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
       {bookMenuPresence.mounted && bookMenuPresence.value ? (
         <BookActionMenu
           book={bookMenuPresence.value}
+          canEditManuscript={canEditManuscript}
+          canExportBooks={canExportBooks}
           onChangeCover={() => void changeCover(bookMenuPresence.value!)}
           onClose={closeBookMenu}
           onDelete={() => {
@@ -684,6 +782,7 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
           sidebar={{
             active: 'manuscript',
             activeChatId,
+            canCreateChat: canCreateChats,
             chatNotice,
             onChat: () => navigate('/chat', { projectId: project?.id ?? undefined, chatId: activeChatId || undefined }),
             onCreateChat: () => void createChat(),
@@ -713,34 +812,42 @@ function ManuscriptShelfPage({ api, navigate, onLogout, route, userName }: Manus
 }
 
 function BookCard({
+  activeJob,
   book,
+  canEditManuscript,
   isActive,
   onOpen,
   onOpenMenu,
+  onOpenRead,
   onSelect,
 }: {
+  activeJob: ProjectJob | null;
   book: Book;
+  canEditManuscript: boolean;
   isActive: boolean;
   onOpen: () => void;
   onOpenMenu: (trigger: HTMLElement | null) => void;
+  onOpenRead: () => void;
   onSelect: () => void;
 }) {
-  const statusClass =
-    book.status === 'ready'
+  const isIndexing = Boolean(activeJob);
+  const currentUnit = activeJob ? numberJobResult(activeJob, 'currentUnit') : undefined;
+  const totalUnits = activeJob ? numberJobResult(activeJob, 'totalUnits') : undefined;
+  const indexingLabel = currentUnit !== undefined && totalUnits !== undefined ? `Индексация · ${currentUnit}/${totalUnits}` : 'Индексация';
+  const statusClass = isIndexing
+    ? styles.statusIndexing
+    : book.status === 'ready'
       ? styles.statusReady
-      : book.status === 'indexing'
-        ? styles.statusIndexing
-        : book.status === 'error'
-          ? styles.statusError
-          : styles.statusDraft;
-  const statusLabel =
-    book.status === 'ready'
+      : book.status === 'error'
+        ? styles.statusError
+        : styles.statusDraft;
+  const statusLabel = isIndexing
+    ? indexingLabel
+    : book.status === 'ready'
       ? 'Готова'
-      : book.status === 'indexing'
-        ? `Индексация · ${book.indexing.currentUnit}/${book.indexing.totalUnits}`
-        : book.status === 'error'
-          ? 'Индексация отменена'
-          : 'Черновик';
+      : book.status === 'error'
+        ? 'Индексация отменена'
+        : 'Черновик';
   return (
     <article className={isActive ? styles.activeBookCard : styles.bookCard} onClick={onSelect}>
       <div className={styles.cover} style={{ background: book.coverColor ?? '#4F46E5' }}>
@@ -755,12 +862,12 @@ function BookCard({
         <div className={styles.cardActions}>
           <span className={statusClass}>{statusLabel}</span>
           <button
-            aria-label={`Открыть редактор ${book.title}`}
+            aria-label={`${canEditManuscript ? 'Открыть редактор' : 'Открыть чтение'} ${book.title}`}
             className={styles.textButton}
-            onClick={(event) => { event.stopPropagation(); onOpen(); }}
+            onClick={(event) => { event.stopPropagation(); (canEditManuscript ? onOpen : onOpenRead)(); }}
             type="button"
           >
-            Редактор
+            {canEditManuscript ? 'Редактор' : 'Чтение'}
           </button>
         </div>
       </div>
@@ -768,28 +875,56 @@ function BookCard({
   );
 }
 
-function IndexingBanner({ job, onCancel }: { job: IndexingJob; onCancel: () => void }) {
+function IndexingBanner({ canCancel, job, onCancel }: { canCancel: boolean; job: ProjectJob; onCancel: () => void }) {
   const percent = Math.round(job.progress * 100);
+  const sourceFileName = stringJobResult(job, 'sourceFileName') ?? 'файл рукописи';
+  const currentUnit = numberJobResult(job, 'currentUnit') ?? 0;
+  const totalUnits = numberJobResult(job, 'totalUnits') ?? 0;
+  const stageLabel = stringJobResult(job, 'stageLabel') ?? 'векторизация абзацев';
   return (
     <section className={styles.indexBanner} aria-label="Индексация книги">
       <UploadCloud aria-hidden="true" size={24} />
       <div>
-        <strong>Индексируется «{job.sourceFileName ?? 'файл рукописи'}»</strong>
-        <p className={styles.muted}>Извлечение глав · {job.currentUnit} из {job.totalUnits} · {job.stageLabel ?? 'векторизация абзацев'}</p>
+        <strong>Индексируется «{sourceFileName}»</strong>
+        <p className={styles.muted}>Извлечение глав · {currentUnit} из {totalUnits} · {stageLabel}</p>
       </div>
       <div className={styles.progressTrack}>
         <div className={styles.progressFill} style={{ width: `${percent}%` }} />
       </div>
       <span className={styles.percentBadge}>{percent}%</span>
-      <button aria-label="Отменить индексацию" className={styles.iconButton} onClick={onCancel} type="button">
+      <button aria-label="Отменить индексацию" className={styles.iconButton} disabled={!canCancel} onClick={onCancel} type="button">
         <X aria-hidden="true" size={18} />
       </button>
     </section>
   );
 }
 
+function jobResult(job: ProjectJob) {
+  return job.result && typeof job.result === 'object' ? (job.result as Record<string, unknown>) : {};
+}
+
+function activeJobBookId(job: ProjectJob) {
+  return job.subject.type === 'book' ? job.subject.id : stringJobResult(job, 'bookId') ?? null;
+}
+
+function bookLabel(book: Book) {
+  return book.displayNumber ? `Книга ${book.displayNumber}` : book.title;
+}
+
+function stringJobResult(job: ProjectJob, key: string) {
+  const value = jobResult(job)[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function numberJobResult(job: ProjectJob, key: string) {
+  const value = jobResult(job)[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
 function BookActionMenu({
   book,
+  canEditManuscript,
+  canExportBooks,
   onChangeCover,
   onClose,
   onDelete,
@@ -845,6 +980,8 @@ function BookActionMenu({
           </div>
           <BookActionItems
             book={book}
+            canEditManuscript={canEditManuscript}
+            canExportBooks={canExportBooks}
             onChangeCover={onChangeCover}
             onDelete={onDelete}
             onExport={onExport}
@@ -860,6 +997,8 @@ function BookActionMenu({
 
 interface BookActionsProps {
   book: Book;
+  canEditManuscript: boolean;
+  canExportBooks: boolean;
   onChangeCover: () => void;
   onClose?: () => void;
   onDelete: () => void;
@@ -870,37 +1009,57 @@ interface BookActionsProps {
   position?: MenuPosition | null;
 }
 
-function BookActionItems({ onChangeCover, onDelete, onExport, onNewChapter, onOpen, onOpenRead }: BookActionsProps) {
+function BookActionItems({ canEditManuscript, canExportBooks, onChangeCover, onDelete, onExport, onNewChapter, onOpen, onOpenRead }: BookActionsProps) {
   return (
     <>
-      <button className={styles.menuItem} onClick={onOpen} type="button">
-        <NotebookPen aria-hidden="true" size={17} />
-        Открыть редактор
-      </button>
       <button className={styles.menuItem} onClick={onOpenRead} type="button">
         <BookOpen aria-hidden="true" size={17} />
         Открыть чтение
       </button>
-      <button className={styles.menuItem} onClick={onNewChapter} type="button">
-        <Plus aria-hidden="true" size={17} />
-        Новая глава
-      </button>
-      <button className={styles.menuItem} onClick={onChangeCover} type="button">
-        <Image aria-hidden="true" size={17} />
-        Изменить обложку
-      </button>
-      <button className={styles.menuItem} onClick={() => onExport('fb2')} type="button">
-        <FileDown aria-hidden="true" size={17} />
-        Экспорт в FB2
-      </button>
-      <button className={styles.menuItem} onClick={() => onExport('epub')} type="button">
-        <FileDown aria-hidden="true" size={17} />
-        Экспорт в EPUB
-      </button>
-      <button className={styles.dangerMenuItem} onClick={onDelete} type="button">
-        <Trash2 aria-hidden="true" size={17} />
-        Удалить книгу
-      </button>
+      {canEditManuscript ? (
+        <>
+          <button className={styles.menuItem} onClick={onOpen} type="button">
+            <NotebookPen aria-hidden="true" size={17} />
+            Открыть редактор
+          </button>
+          <button className={styles.menuItem} onClick={onNewChapter} type="button">
+            <Plus aria-hidden="true" size={17} />
+            Новая глава
+          </button>
+          <button className={styles.menuItem} onClick={onChangeCover} type="button">
+            <Image aria-hidden="true" size={17} />
+            Изменить обложку
+          </button>
+        </>
+      ) : (
+        <button className={styles.menuItem} disabled type="button">
+          <NotebookPen aria-hidden="true" size={17} />
+          Редактирование доступно редактору или администратору
+        </button>
+      )}
+      {canExportBooks ? (
+        <>
+          <button className={styles.menuItem} onClick={() => onExport('fb2')} type="button">
+            <FileDown aria-hidden="true" size={17} />
+            Экспорт в FB2
+          </button>
+          <button className={styles.menuItem} onClick={() => onExport('epub')} type="button">
+            <FileDown aria-hidden="true" size={17} />
+            Экспорт в EPUB
+          </button>
+        </>
+      ) : (
+        <button className={styles.menuItem} disabled type="button">
+          <FileDown aria-hidden="true" size={17} />
+          Экспорт доступен владельцу или администратору
+        </button>
+      )}
+      {canEditManuscript ? (
+        <button className={styles.dangerMenuItem} onClick={onDelete} type="button">
+          <Trash2 aria-hidden="true" size={17} />
+          Удалить книгу
+        </button>
+      ) : null}
     </>
   );
 }

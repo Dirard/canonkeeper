@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryFunctionContext } from '@tanstack/react-query';
+import { createIdempotencyKey } from '../../../shared/api';
 import type {
   AgentSuggestion,
   ApiRequestOptions,
@@ -10,16 +11,19 @@ import type {
   ChatMessage,
   ChatSession,
   Project,
+  ReaderReferenceLocator,
   ReaderLocator,
   SearchScope,
 } from '../../../shared/api';
-import { getArtifactTriggerIds } from '../model';
+import { getArtifactReferenceIds } from '../model';
 
-export type { AgentSuggestion, ApiRequestOptions, Book, Chapter, ChatArtifact, ChatMessage, ChatSession, Project, ReaderLocator, SearchScope };
+export { createIdempotencyKey };
+export type { AgentSuggestion, ApiRequestOptions, Book, Chapter, ChatArtifact, ChatMessage, ChatSession, Project, ReaderReferenceLocator, ReaderLocator, SearchScope };
 
 export type ChatApiClient = Pick<
   CanonKeeperApiClient,
   | 'approveAgentSuggestion'
+  | 'cancelJob'
   | 'createChatSession'
   | 'deleteChatSession'
   | 'getAgentSuggestion'
@@ -37,7 +41,9 @@ export type ChatApiClient = Pick<
   | 'rejectAgentSuggestion'
   | 'renameChatSession'
   | 'searchProject'
-  | 'sendChatMessage'
+  | 'createChatTurn'
+  | 'getChatTurn'
+  | 'streamChatTurnEvents'
 >;
 
 export type ChatSearchResult = Awaited<ReturnType<CanonKeeperApiClient['searchProject']>>['data'][number];
@@ -119,7 +125,7 @@ export async function hydrateChatArtifacts(api: ChatApiClient, messages: ChatMes
   const artifactsById: Record<string, ChatArtifact> = {};
   let firstLocator: ReaderLocator | null = null;
 
-  for (const artifactId of new Set(messages.flatMap(getArtifactTriggerIds))) {
+  for (const artifactId of new Set(messages.flatMap(getArtifactReferenceIds))) {
     try {
       const artifact = await api.getChatArtifact(artifactId);
       artifactsById[artifactId] = artifact;
@@ -191,7 +197,9 @@ export async function loadChatAssistance(api: ChatApiClient, params: ChatAssista
   const [project, bookList] = await Promise.all([api.getProject(params.projectId), api.listBooks(params.projectId)]);
   const book =
     bookList.data.find((item) => item.id === params.bookId) ??
-    bookList.data.find((item) => item.id === project.activeBookId) ??
+    bookList.data
+      .filter((item) => item.status === 'ready')
+      .sort((left, right) => right.chapterCount - left.chapterCount || left.order - right.order)[0] ??
     bookList.data[0] ??
     null;
   if (!book) {
@@ -292,7 +300,8 @@ export function useApproveChatAssistanceMutation(api: ChatApiClient) {
 export function useRejectChatAssistanceMutation(api: ChatApiClient) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (suggestionId: string) => api.rejectAgentSuggestion(suggestionId),
+    mutationFn: ({ expectedChapterRevision, suggestionId }: { expectedChapterRevision: number; suggestionId: string }) =>
+      api.rejectAgentSuggestion(suggestionId, { expectedChapterRevision }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chatQueryKeys.all }),
   });
 }

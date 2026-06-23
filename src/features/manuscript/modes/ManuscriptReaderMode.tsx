@@ -196,7 +196,7 @@ export function ManuscriptReaderMode({ api, navigate, onLogout, route, userName 
   );
   const projectTitle = project?.title ?? 'Проект';
   const projectMeta = formatProjectMeta(project);
-  const bookLabel = book?.displayLabel ?? 'Книга';
+  const bookLabel = book ? formatBookLabel(book) : 'Книга';
   const chapterLabel = chapter ? `Глава ${chapter.navigation.displayNumber}` : 'Глава';
   const visibleTitle = chapter ? `${chapterLabel}. ${chapter.title}` : 'Чтение';
 
@@ -272,7 +272,6 @@ export function ManuscriptReaderMode({ api, navigate, onLogout, route, userName 
             quote: selectedQuote,
             body: noteBody.trim(),
             color: '#FEF3C7',
-            createdFromSelection: true,
             tags: ['continuity'],
           },
         });
@@ -1133,6 +1132,10 @@ function ForbiddenState({ message, onBack }: { message: string; onBack: () => vo
   );
 }
 
+function formatBookLabel(book: Book) {
+  return book.displayNumber ? `Книга ${book.displayNumber}` : book.title;
+}
+
 function LayerPortal({ children }: { children: ReactNode }) {
   return createPortal(children, document.body);
 }
@@ -1151,10 +1154,9 @@ function buildLocator(
     bookId,
     chapterId,
     paragraphId,
-    targetView: 'reading',
-    revision: revision ?? null,
+    targetView: 'published',
+    revision: revision ?? 1,
     annotationId: annotationId ?? null,
-    source: annotationId ? 'annotation' : 'manual',
     range: {
       startOffset: 0,
       endOffset: quote.length,

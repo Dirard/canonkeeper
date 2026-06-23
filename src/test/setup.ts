@@ -1,9 +1,16 @@
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
+import { mswApiBaseUrl } from './msw/handlers';
 import { mswServer } from './msw/server';
 
 beforeAll(() => {
-  mswServer.listen({ onUnhandledRequest: 'bypass' });
+  mswServer.listen({
+    onUnhandledRequest(request) {
+      if (request.url.startsWith(mswApiBaseUrl)) {
+        throw new Error(`Unhandled MSW API request: ${request.method} ${request.url}`);
+      }
+    },
+  });
   installBrowserGeometryPolyfills();
 });
 

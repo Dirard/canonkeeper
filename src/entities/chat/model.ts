@@ -1,21 +1,11 @@
 import type { ChatMessage, ReaderLocator } from '../../shared/api';
 
-const inlineTriggerPattern = /\s*::ck-trigger\{kind=\\?"reader_references\\?"\s+artifactId=\\?"[^"\\}]+\\?"\}/g;
-
-export function isReaderReferenceTrigger(trigger: unknown): trigger is { artifactId: string } {
-  return typeof trigger === 'object' && trigger !== null && 'artifactId' in trigger && typeof trigger.artifactId === 'string';
+export function isReaderArtifactReference(reference: unknown): reference is { artifactId: string } {
+  return typeof reference === 'object' && reference !== null && 'artifactId' in reference && typeof reference.artifactId === 'string';
 }
 
-export function getArtifactTriggerIds(message: ChatMessage) {
-  return message.triggers.flatMap((trigger) => (isReaderReferenceTrigger(trigger) ? [trigger.artifactId] : []));
-}
-
-export function extractArtifactId(text: string) {
-  return /artifactId=\\?"([^"\\]+)\\?"/.exec(text)?.[1] ?? null;
-}
-
-export function stripInlineTriggers(text: string) {
-  return text.replace(inlineTriggerPattern, '').trimEnd();
+export function getArtifactReferenceIds(message: ChatMessage) {
+  return message.references.flatMap((reference) => (isReaderArtifactReference(reference) ? [reference.artifactId] : []));
 }
 
 export function sameLocator(left: ReaderLocator, right: ReaderLocator | null) {

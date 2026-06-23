@@ -77,6 +77,8 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   const requestedBookId = route.query.get('bookId');
   const [project, setProject] = useState<Project | null>(null);
   const [book, setBook] = useState<Book | null>(null);
+  const [canCreateChats, setCanCreateChats] = useState(false);
+  const [canEditManuscript, setCanEditManuscript] = useState(false);
   const [chapters, setChapters] = useState<DraftChapterListItem[]>([]);
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [annotations, setAnnotations] = useState<ReaderAnnotation[]>([]);
@@ -134,7 +136,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   const createChatMutation = manuscriptModeApi.useCreateChatSessionMutation(api);
   const logoutMutation = manuscriptModeApi.useLogoutMutation(api);
   const agentSuggestionsQuery = manuscriptModeApi.useChapterAgentSuggestionsQuery(api, chapter?.id ?? '');
-  const requestSuggestionMutation = manuscriptModeApi.useRequestAgentSuggestionMutation(api);
+  const startAgentRunMutation = manuscriptModeApi.useStartAgentRunMutation(api);
   const approveSuggestionMutation = manuscriptModeApi.useApproveAgentSuggestionMutation(api);
   const rejectSuggestionMutation = manuscriptModeApi.useRejectAgentSuggestionMutation(api);
   const createAnnotationMutation = manuscriptModeApi.useCreateChapterAnnotationMutation(api);
@@ -183,12 +185,16 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   useEffect(() => {
     if (workspaceQuery.isPending) {
       clearAutosaveTimer();
+      setCanCreateChats(false);
+      setCanEditManuscript(false);
       setStatus('loading');
       setError('');
       return;
     }
 
     if (workspaceQuery.isError) {
+      setCanCreateChats(false);
+      setCanEditManuscript(false);
       setError(formatError(workspaceQuery.error, 'Не удалось открыть черновик.'));
       setStatus(isForbidden(workspaceQuery.error) ? 'forbidden' : 'error');
       setSessionStatus('error');
@@ -199,6 +205,11 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
     clearAutosaveTimer();
     setProject(workspace.project);
     setBook(workspace.book);
+    setCanCreateChats(workspace.canCreateChats);
+    setCanEditManuscript(workspace.canEditManuscript);
+    if (!workspace.canEditManuscript) {
+      setReadMode(true);
+    }
     setSessions(workspace.sessions);
     setSessionStatus(workspace.sessions.length > 0 ? 'ready' : 'empty');
     setActiveChatId((current) => workspace.sessions.find((chat) => chat.id === current)?.id ?? workspace.sessions[0]?.id ?? '');
@@ -236,7 +247,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   }, [isNewChapter, workspaceQuery.data, workspaceQuery.error, workspaceQuery.isError, workspaceQuery.isPending]);
 
   useEffect(() => {
-    if (status !== 'ready' || isNewChapter || saveState !== 'dirty' || !chapter || !book) {
+    if (status !== 'ready' || !canEditManuscript || isNewChapter || saveState !== 'dirty' || !chapter || !book) {
       return;
     }
     clearAutosaveTimer();
@@ -245,7 +256,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
       void saveDraft('autosave');
     }, autosaveDelayMs);
     return () => clearAutosaveTimer();
-  }, [book, chapter, draftText, draftTitle, isNewChapter, saveState, status]);
+  }, [book, canEditManuscript, chapter, draftText, draftTitle, isNewChapter, saveState, status]);
 
   const chapterNumber = isNewChapter ? nextChapterNumber(chapters) : chapter?.navigation.displayNumber ?? '';
   const visibleTitle = `${chapterNumber ? `${chapterNumber}. ` : ''}${draftTitle || newChapterTitle}`;
@@ -269,9 +280,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   const projectTitle = project?.title ?? 'Проект';
   const projectMeta = formatProjectMeta(project);
   const currentChapterId = chapter?.id ?? requestedChapterId;
-  const bookLabel = book?.displayLabel ?? book?.title ?? 'Книга';
+  const bookLabel = book ? formatBookLabel(book) : 'Книга';
   const activeAnnotation = annotations.find((annotation) => annotation.id === activeNoteId) ?? null;
   const noteParagraphId = chapter?.paragraphs.find((paragraph) => paragraph.kind !== 'heading')?.id ?? chapter?.paragraphs[0]?.id ?? '';
+  const editorReadMode = readMode || !canEditManuscript;
 
   function navigateDraft(overrides: Record<string, string | undefined>) {
     navigate('/manuscript/books', {
@@ -286,11 +298,18 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   }
 
   function updateDraftText(nextText: string) {
+    if (!canEditManuscript) {
+      return;
+    }
     setDraftText(nextText);
     setSaveState(nextText === savedText ? 'saved' : 'dirty');
   }
 
   function formatSelection(action: FormatAction) {
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     editorRef.current?.format(action);
   }
 
@@ -304,6 +323,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   async function saveDraft(trigger: 'manual' | 'autosave' = 'manual') {
     if (trigger === 'manual') {
       clearAutosaveTimer();
+    }
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return null;
     }
     const targetBook = bookRef.current;
     const targetChapter = chapterRef.current;
@@ -393,6 +416,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   }
 
   async function publishDraft() {
+    if (!canEditManuscript) {
+      setNotice('Публикация доступна редактору, администратору или владельцу проекта.');
+      return;
+    }
     const saved = saveState === 'dirty' || saveState === 'conflict' || saveState === 'error' ? await saveDraft('manual') : chapter;
     if (!saved) return;
     try {
@@ -429,12 +456,48 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   async function overwriteWithLocalVersion() {
     const targetChapter = chapterRef.current;
     if (!targetChapter) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
+    const snapshotText = draftTextRef.current;
+    const snapshotTitle = draftTitleRef.current.trim() || newChapterTitle;
+    const requestId = saveRequestIdRef.current + 1;
+    saveRequestIdRef.current = requestId;
+    clearAutosaveTimer();
+    setSaveState('saving');
+    setNotice('');
     try {
-      // Re-sync to the latest server revision, then persist the in-memory edits over it.
       const fresh = await getChapterMutation.mutateAsync(targetChapter.id);
-      setChapter(fresh);
-      await saveDraft('manual');
+      const updated = await updateChapterMutation.mutateAsync({
+        chapterId: fresh.id,
+        body: {
+          title: snapshotTitle || fresh.title,
+          paragraphs: toParagraphInputs(
+            snapshotText,
+            fresh.navigation.displayNumber,
+            snapshotTitle || fresh.title,
+            fresh.paragraphs,
+          ),
+          expectedRevision: fresh.draftRevision,
+        },
+      });
+      if (requestId !== saveRequestIdRef.current) {
+        return;
+      }
+      setChapter(updated);
+      if (draftTextRef.current === snapshotText && (draftTitleRef.current.trim() || newChapterTitle) === snapshotTitle) {
+        setSavedText(snapshotText);
+        setSaveState('saved');
+        setNotice('Ваша версия сохранена поверх актуальной серверной ревизии.');
+      } else {
+        setSaveState('dirty');
+      }
     } catch (nextError) {
+      if (requestId !== saveRequestIdRef.current) {
+        return;
+      }
+      setSaveState(isConflict(nextError) ? 'conflict' : 'error');
       setNotice(formatError(nextError, 'Не удалось сохранить вашу версию.'));
     }
   }
@@ -480,6 +543,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
 
   async function createProjectChat() {
     if (!project) return;
+    if (!canCreateChats) {
+      setChatNotice('Создание чатов доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     try {
       const chat = await createChatMutation.mutateAsync({ projectId: project.id, title: 'Новый чат по саге' });
       setChatNotice('');
@@ -491,23 +558,28 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
     }
   }
 
-  async function requestAgentSuggestion(event: FormEvent<HTMLFormElement>) {
+  async function startAgentRun(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const prompt = agentComposer.trim();
     if (!prompt || !chapter) return;
+    if (!canEditManuscript) {
+      setAgentNotice('Агентские правки доступны редактору, администратору или владельцу проекта.');
+      return;
+    }
     if (saveState === 'dirty' || saveState === 'saving') {
       setAgentNotice('Сначала сохраните черновик, чтобы агент работал с актуальным текстом.');
       return;
     }
     setAgentNotice('');
     try {
-      await requestSuggestionMutation.mutateAsync({
-        chapterId: chapter.id,
+      await startAgentRunMutation.mutateAsync({
         body: {
           prompt,
           expectedChapterRevision: chapter.draftRevision,
-          selectionQuote: selectedDraftExcerpt.trim() || null,
+          selectionQuote: selectedDraftExcerpt.trim() || undefined,
         },
+        chapterId: chapter.id,
+        idempotencyKey: manuscriptModeApi.createIdempotencyKey('startAgentRun'),
       });
       setAgentComposer('');
     } catch (nextError) {
@@ -517,6 +589,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
 
   async function approveAgentSuggestion(suggestion: AgentSuggestion) {
     if (!chapter) return;
+    if (!canEditManuscript) {
+      setAgentNotice('Агентские правки доступны редактору, администратору или владельцу проекта.');
+      return;
+    }
     if (saveState === 'dirty' || saveState === 'saving') {
       setAgentNotice('Сначала сохраните черновик, затем применяйте предложение.');
       return;
@@ -545,10 +621,18 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   }
 
   async function rejectAgentSuggestion(suggestion: AgentSuggestion) {
+    if (!chapter) return;
+    if (!canEditManuscript) {
+      setAgentNotice('Агентские правки доступны редактору, администратору или владельцу проекта.');
+      return;
+    }
     setAgentActionId(suggestion.id);
     setAgentNotice('');
     try {
-      await rejectSuggestionMutation.mutateAsync(suggestion.id);
+      await rejectSuggestionMutation.mutateAsync({
+        expectedChapterRevision: chapter.draftRevision,
+        suggestionId: suggestion.id,
+      });
       setAgentNotice('Предложение отклонено.');
     } catch (nextError) {
       setAgentNotice(formatError(nextError, 'Не удалось отклонить предложение.'));
@@ -577,6 +661,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   }
 
   function openNote(mode: 'add' | 'edit' | 'delete', annotation?: ReaderAnnotation) {
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      return;
+    }
     setRailTab('notes');
     setActiveNoteId(annotation?.id ?? null);
     setNoteBody(mode === 'edit' ? annotation?.body ?? '' : '');
@@ -590,6 +678,11 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
   async function saveNote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!chapter || !project || !book || noteBody.trim().length === 0) {
+      return;
+    }
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      closeNote();
       return;
     }
     const quote = activeAnnotation?.quote ?? selectedDraftExcerpt ?? '';
@@ -609,12 +702,11 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
           paragraphId: noteParagraphId || null,
           targetView: 'draft',
           revision: chapter.draftRevision,
-          source: quote ? 'annotation' : 'manual',
           range: quote ? { startOffset: 0, endOffset: quote.length, quote } : null,
         };
         const created = await createAnnotationMutation.mutateAsync({
           chapterId: chapter.id,
-          body: { kind: 'note', locator, quote: quote || null, body: noteBody.trim(), color: '#FEF3C7', createdFromSelection: Boolean(quote), tags: ['continuity'] },
+          body: { kind: 'note', locator, quote: quote || null, body: noteBody.trim(), color: '#FEF3C7', tags: ['continuity'] },
         });
         setAnnotations((current) => [created, ...current]);
         setActiveNoteId(created.id);
@@ -628,6 +720,11 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
 
   async function deleteNote() {
     if (!activeAnnotation) return;
+    if (!canEditManuscript) {
+      setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+      closeNote();
+      return;
+    }
     try {
       await deleteAnnotationMutation.mutateAsync(activeAnnotation.id);
       setAnnotations((current) => current.filter((annotation) => annotation.id !== activeAnnotation.id));
@@ -678,9 +775,10 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
     agentComposer,
     agentNotice,
     agentPanelStatus,
-    agentRequesting: requestSuggestionMutation.isPending,
+    agentRequesting: startAgentRunMutation.isPending,
     agentSuggestions,
     annotations,
+    canEditManuscript,
     currentChapterId,
     displaySize,
     displayTheme,
@@ -690,8 +788,13 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
     onApproveSuggestion: (suggestion) => void approveAgentSuggestion(suggestion),
     onDeleteNote: (annotation) => openNote('delete', annotation),
     onEditNote: (annotation) => openNote('edit', annotation),
-    onNewChapter: () =>
-      navigate('/manuscript/books', { mode: 'draft', newChapter: '1', projectId: project?.id ?? undefined, bookId: book?.id ?? undefined }),
+    onNewChapter: () => {
+      if (!canEditManuscript) {
+        setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+        return;
+      }
+      navigate('/manuscript/books', { mode: 'draft', newChapter: '1', projectId: project?.id ?? undefined, bookId: book?.id ?? undefined });
+    },
     onOpenChapter: (chapterId) =>
       navigate('/manuscript/books', { mode: 'draft', chapterId, projectId: project?.id ?? undefined, bookId: book?.id ?? undefined }),
     onRejectSuggestion: (suggestion) => void rejectAgentSuggestion(suggestion),
@@ -701,7 +804,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
       setRailTab(tab);
       navigateDraft({ pane: tab === 'structure' ? undefined : tab, chatId: undefined });
     },
-    onSendAgentMessage: requestAgentSuggestion,
+    onSendAgentMessage: startAgentRun,
     onSetAgentComposer: setAgentComposer,
     selectedDraftExcerpt,
     structureChapters: chapters,
@@ -714,17 +817,24 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
       draftText={draftText}
       editorRef={editorRef}
       formatSelection={formatSelection}
+      canEditManuscript={canEditManuscript}
       notice={notice}
       onBack={() => navigate('/manuscript/books', { projectId: project?.id ?? undefined, bookId: book?.id ?? undefined })}
       onChangeText={updateDraftText}
-      onDraftMode={() => setReadMode(false)}
+      onDraftMode={() => {
+        if (!canEditManuscript) {
+          setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+          return;
+        }
+        setReadMode(false);
+      }}
       onHistoryStateChange={setEditorHistory}
       onPublish={() => void publishDraft()}
       onReadMode={() => setReadMode(true)}
       onSave={() => void saveDraft('manual')}
       onSelectionTextChange={setSelectedDraftExcerpt}
       rail={railProps}
-      readMode={readMode}
+      readMode={editorReadMode}
       saveLabel={saveLabel}
       title={visibleTitle}
     />
@@ -743,6 +853,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
         <ProjectSidebar
           active="manuscript"
           activeChatId={activeChatId}
+          canCreateChat={canCreateChats}
           chatNotice={chatNotice}
           onChat={() => navigate('/chat', { projectId: project?.id ?? undefined, chatId: activeChatId || undefined })}
           onCreateChat={() => void createProjectChat()}
@@ -754,25 +865,39 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
           sessionStatus={sessionStatus}
         />
 
-        <section className={readMode ? `${styles.editor} ${styles.editorReading}` : styles.editor} aria-label="Черновик главы">
+        <section className={editorReadMode ? `${styles.editor} ${styles.editorReading}` : styles.editor} aria-label="Черновик главы">
           <Breadcrumb
             bookLabel={bookLabel}
             onBack={() => navigate('/manuscript/books', { projectId: project?.id ?? undefined, bookId: book?.id ?? undefined })}
             projectTitle={projectTitle}
           />
-          <DraftHeader bookLabel={bookLabel} isNewChapter={isNewChapter} onDraftMode={() => setReadMode(false)} onReadMode={() => setReadMode(true)} readMode={readMode} title={visibleTitle} />
-          {readMode ? null : <FormatToolbar formatSelection={formatSelection} redoDisabled={!editorHistory.canRedo} undoDisabled={!editorHistory.canUndo} />}
+          <DraftHeader
+            bookLabel={bookLabel}
+            canEditManuscript={canEditManuscript}
+            isNewChapter={isNewChapter}
+            onDraftMode={() => {
+              if (!canEditManuscript) {
+                setNotice('Редактирование рукописи доступно редактору, администратору или владельцу проекта.');
+                return;
+              }
+              setReadMode(false);
+            }}
+            onReadMode={() => setReadMode(true)}
+            readMode={editorReadMode}
+            title={visibleTitle}
+          />
+          {editorReadMode ? null : <FormatToolbar formatSelection={formatSelection} redoDisabled={!editorHistory.canRedo} undoDisabled={!editorHistory.canUndo} />}
           <EditorBody
             displaySize={displaySize}
             draftText={draftText}
-            editable={!readMode}
+            editable={!editorReadMode && canEditManuscript}
             editorRef={editorRef}
             onChangeText={updateDraftText}
             onHistoryStateChange={setEditorHistory}
             onSave={() => void saveDraft('manual')}
             onSelectionTextChange={setSelectedDraftExcerpt}
           />
-          <DraftFooter onPublish={() => void publishDraft()} paragraphCount={paragraphCount} saveLabel={saveLabel} saveState={saveState} wordCount={wordCount} />
+          <DraftFooter canPublish={canEditManuscript} onPublish={() => void publishDraft()} paragraphCount={paragraphCount} saveLabel={saveLabel} saveState={saveState} wordCount={wordCount} />
         </section>
 
         <RightPane {...railProps} />
@@ -785,7 +910,7 @@ export function ManuscriptDraftMode({ api, navigate, onLogout, route, userName }
             <button className={styles.secondaryButton} onClick={() => void loadServerVersion()} type="button">
               Загрузить версию сервера
             </button>
-            <button className={styles.primaryButton} onClick={() => void overwriteWithLocalVersion()} type="button">
+            <button className={styles.primaryButton} disabled={!canEditManuscript} onClick={() => void overwriteWithLocalVersion()} type="button">
               Сохранить мою версию
             </button>
           </div>
@@ -980,8 +1105,13 @@ function Breadcrumb({ bookLabel, onBack, projectTitle }: { bookLabel: string; on
   );
 }
 
+function formatBookLabel(book: Book) {
+  return book.displayNumber ? `Книга ${book.displayNumber}` : book.title;
+}
+
 function DraftHeader({
   bookLabel,
+  canEditManuscript,
   isNewChapter,
   onDraftMode,
   onReadMode,
@@ -989,6 +1119,7 @@ function DraftHeader({
   title,
 }: {
   bookLabel: string;
+  canEditManuscript: boolean;
   isNewChapter: boolean;
   onDraftMode: () => void;
   onReadMode: () => void;
@@ -1008,7 +1139,7 @@ function DraftHeader({
         <button aria-pressed={readMode} className={readMode ? styles.segmentActive : styles.segmentGhost} onClick={onReadMode} type="button">
           Чтение
         </button>
-        <button aria-pressed={!readMode} className={readMode ? styles.segmentGhost : styles.segmentActive} onClick={onDraftMode} type="button">
+        <button aria-pressed={!readMode} className={readMode ? styles.segmentGhost : styles.segmentActive} disabled={!canEditManuscript} onClick={onDraftMode} type="button">
           Черновик
         </button>
       </div>
@@ -1102,12 +1233,14 @@ function EditorBody({
 }
 
 function DraftFooter({
+  canPublish,
   onPublish,
   paragraphCount,
   saveLabel,
   saveState,
   wordCount,
 }: {
+  canPublish: boolean;
   onPublish: () => void;
   paragraphCount: number;
   saveLabel: string;
@@ -1123,7 +1256,7 @@ function DraftFooter({
       <span className={styles.count}>
         {wordCount} слов · {paragraphCount} абзаца
       </span>
-      <button className={styles.publishButton} onClick={onPublish} type="button">
+      <button className={styles.publishButton} disabled={!canPublish} onClick={onPublish} type="button">
         <Upload aria-hidden="true" size={16} />
         Опубликовать
       </button>
@@ -1139,6 +1272,7 @@ type RailProps = {
   agentRequesting: boolean;
   agentSuggestions: AgentSuggestion[];
   annotations: ReaderAnnotation[];
+  canEditManuscript: boolean;
   currentChapterId: string;
   displaySize: number;
   displayTheme: DisplayTheme;
@@ -1170,6 +1304,7 @@ function RightPane({
   agentRequesting,
   agentSuggestions,
   annotations,
+  canEditManuscript,
   currentChapterId,
   displaySize,
   displayTheme,
@@ -1210,6 +1345,7 @@ function RightPane({
         {tab === 'structure' ? (
           <StructureList
             currentChapterId={currentChapterId}
+            canEditManuscript={canEditManuscript}
             isNewChapter={isNewChapter}
             onNewChapter={onNewChapter}
             onOpenChapter={onOpenChapter}
@@ -1217,10 +1353,11 @@ function RightPane({
             structureDraft={structureDraft}
           />
         ) : null}
-        {tab === 'notes' ? <NotesList annotations={annotations} onAddNote={onAddNote} onDeleteNote={onDeleteNote} onEditNote={onEditNote} /> : null}
+        {tab === 'notes' ? <NotesList annotations={annotations} canEditManuscript={canEditManuscript} onAddNote={onAddNote} onDeleteNote={onDeleteNote} onEditNote={onEditNote} /> : null}
         {tab === 'chat' ? (
           <ManuscriptEditorAgentPanel
             composerValue={agentComposer}
+            canEdit={canEditManuscript}
             draftTitle={draftTitle}
             notice={agentNotice}
             onApprove={onApproveSuggestion}
@@ -1273,6 +1410,7 @@ function TabButton({ active, label, onClick }: { active: boolean; label: string;
 }
 
 function StructureList({
+  canEditManuscript,
   currentChapterId,
   isNewChapter,
   onNewChapter,
@@ -1280,6 +1418,7 @@ function StructureList({
   structureChapters,
   structureDraft,
 }: {
+  canEditManuscript: boolean;
   currentChapterId: string;
   isNewChapter: boolean;
   onNewChapter: () => void;
@@ -1311,7 +1450,7 @@ function StructureList({
           {structureDraft.displayNumber}. {structureDraft.title}
         </span>
       </button>
-      <button className={styles.addChapterButton} disabled={isNewChapter} onClick={onNewChapter} type="button">
+      <button className={styles.addChapterButton} disabled={isNewChapter || !canEditManuscript} onClick={onNewChapter} type="button">
         <Plus aria-hidden="true" size={15} />
         Новая глава
       </button>
@@ -1321,18 +1460,20 @@ function StructureList({
 
 function NotesList({
   annotations,
+  canEditManuscript,
   onAddNote,
   onDeleteNote,
   onEditNote,
 }: {
   annotations: ReaderAnnotation[];
+  canEditManuscript: boolean;
   onAddNote: () => void;
   onDeleteNote: (annotation: ReaderAnnotation) => void;
   onEditNote: (annotation: ReaderAnnotation) => void;
 }) {
   return (
     <div className={styles.notesList}>
-      <button className={styles.addNoteButton} onClick={onAddNote} type="button">
+      <button className={styles.addNoteButton} disabled={!canEditManuscript} onClick={onAddNote} type="button">
         <Plus aria-hidden="true" size={16} />
         Добавить заметку
       </button>
@@ -1344,10 +1485,10 @@ function NotesList({
             {annotation.quote ? <span>«{annotation.quote}»</span> : null}
           </div>
           <div className={styles.noteCardActions}>
-            <button aria-label="Редактировать заметку" className={styles.noteIconButton} onClick={() => onEditNote(annotation)} type="button">
+            <button aria-label="Редактировать заметку" className={styles.noteIconButton} disabled={!canEditManuscript} onClick={() => onEditNote(annotation)} type="button">
               <PenLine aria-hidden="true" size={15} />
             </button>
-            <button aria-label="Удалить заметку" className={styles.noteIconButton} onClick={() => onDeleteNote(annotation)} type="button">
+            <button aria-label="Удалить заметку" className={styles.noteIconButton} disabled={!canEditManuscript} onClick={() => onDeleteNote(annotation)} type="button">
               <Trash2 aria-hidden="true" size={15} />
             </button>
           </div>
@@ -1435,6 +1576,7 @@ function LayerPortal({ children }: { children: ReactNode }) {
 }
 
 function MobileDraftSurface({
+  canEditManuscript,
   draftText,
   editorRef,
   formatSelection,
@@ -1452,6 +1594,7 @@ function MobileDraftSurface({
   saveLabel,
   title,
 }: {
+  canEditManuscript: boolean;
   draftText: string;
   editorRef: RefObject<RichDraftEditorHandle | null>;
   formatSelection: (action: FormatAction) => void;
@@ -1490,7 +1633,7 @@ function MobileDraftSurface({
             <PanelRight aria-hidden="true" size={20} />
             {noteCount > 0 ? <span className={styles.mobilePanelBadge}>{noteCount}</span> : null}
           </button>
-          <button className={styles.mobilePublish} onClick={onPublish} type="button">
+          <button className={styles.mobilePublish} disabled={!canEditManuscript} onClick={onPublish} type="button">
             <Upload aria-hidden="true" size={14} />
             Публикация
           </button>
@@ -1501,7 +1644,7 @@ function MobileDraftSurface({
           <button aria-pressed={readMode} className={readMode ? styles.segmentActive : styles.segmentGhost} onClick={onReadMode} type="button">
             Чтение
           </button>
-          <button aria-pressed={!readMode} className={readMode ? styles.segmentGhost : styles.segmentActive} onClick={onDraftMode} type="button">
+          <button aria-pressed={!readMode} className={readMode ? styles.segmentGhost : styles.segmentActive} disabled={!canEditManuscript} onClick={onDraftMode} type="button">
             Черновик
           </button>
         </div>
@@ -1512,8 +1655,8 @@ function MobileDraftSurface({
         <RichDraftEditor
           ariaLabel="Текст черновика"
           displaySize={rail.displaySize}
-          editable={!readMode}
-          hint={readMode ? '' : 'Продолжайте писать главу...'}
+          editable={!readMode && canEditManuscript}
+          hint={readMode || !canEditManuscript ? '' : 'Продолжайте писать главу...'}
           onChangeMarkdown={onChangeText}
           onHistoryStateChange={onHistoryStateChange}
           onSave={onSave}
@@ -1522,7 +1665,7 @@ function MobileDraftSurface({
           value={draftText}
         />
       </section>
-      {readMode ? null : (
+      {readMode || !canEditManuscript ? null : (
         <nav className={styles.mobileFormatBar} aria-label="Форматирование черновика">
           <ToolButton action="bold" icon={<Bold aria-hidden="true" size={16} />} label="Жирный" onClick={formatSelection} />
           <ToolButton action="italic" icon={<Italic aria-hidden="true" size={16} />} label="Курсив" onClick={formatSelection} />

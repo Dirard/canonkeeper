@@ -6,6 +6,7 @@ export const mswUser: AuthSession['user'] = {
   createdAt: '2026-06-16T05:00:00.000Z',
   displayName: 'Мира Волкова',
   email: 'mira@example.com',
+  emailVerified: true,
   id: 'user-mira',
 };
 

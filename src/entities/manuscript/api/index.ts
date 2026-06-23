@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createIdempotencyKey } from '../../../shared/api';
 import type {
   AgentSuggestion,
   Book,
@@ -6,19 +7,22 @@ import type {
   Chapter,
   ChatMessage,
   ChatSession,
+  Job,
   Project,
+  ProjectMembership,
   ReaderAnnotation,
   ReaderLocator,
   SearchScope,
 } from '../../../shared/api';
 
-export type { AgentSuggestion, Book, Chapter, ChatMessage, ChatSession, Project, ReaderAnnotation, ReaderLocator, SearchScope };
+export { createIdempotencyKey };
+export type { AgentSuggestion, Book, Chapter, ChatMessage, ChatSession, Project, ProjectMembership, ReaderAnnotation, ReaderLocator, SearchScope };
 export type ReaderSourceClient = Pick<CanonKeeperApiClient, 'getChapter'>;
 
 export type ManuscriptApiClient = Pick<
   CanonKeeperApiClient,
   | 'approveAgentSuggestion'
-  | 'cancelIndexingJob'
+  | 'cancelJob'
   | 'createBook'
   | 'createBookExport'
   | 'createChapter'
@@ -29,9 +33,8 @@ export type ManuscriptApiClient = Pick<
   | 'getBook'
   | 'getChapter'
   | 'getChatSession'
-  | 'getExportJob'
   | 'getImportConstraints'
-  | 'getIndexingJob'
+  | 'getJob'
   | 'getProject'
   | 'importBookFile'
   | 'listBooks'
@@ -40,27 +43,29 @@ export type ManuscriptApiClient = Pick<
   | 'listAgentSuggestions'
   | 'listChatMessages'
   | 'listChatSessions'
-  | 'listIndexingJobs'
+  | 'listProjectJobs'
   | 'listProjects'
   | 'logout'
   | 'publishChapter'
   | 'rejectAgentSuggestion'
-  | 'requestAgentSuggestion'
   | 'searchProject'
-  | 'sendChatMessage'
+  | 'startAgentRun'
+  | 'startProjectIndexing'
   | 'updateBook'
   | 'updateChapter'
   | 'updateReaderAnnotation'
 >;
 
 export type ChapterListItem = Awaited<ReturnType<ManuscriptApiClient['listChapters']>>['data'][number];
-export type IndexingJob = Awaited<ReturnType<ManuscriptApiClient['listIndexingJobs']>>['data'][number];
-export type ExportJob = Awaited<ReturnType<ManuscriptApiClient['createBookExport']>>;
+export type ProjectJob = Job;
 export type SearchResult = Awaited<ReturnType<ManuscriptApiClient['searchProject']>>['data'][number];
 
 export interface ManuscriptShelfWorkspace {
   books: Book[];
-  jobs: IndexingJob[];
+  canCreateChats: boolean;
+  canEditManuscript: boolean;
+  canExportBooks: boolean;
+  jobs: ProjectJob[];
   project: Project | null;
   projects: Project[];
   sessions: ChatSession[];
@@ -83,6 +88,8 @@ export interface ManuscriptReaderWorkspace {
 export interface ManuscriptDraftWorkspace {
   annotations: ReaderAnnotation[];
   book: Book | null;
+  canCreateChats: boolean;
+  canEditManuscript: boolean;
   chapter: Chapter | null;
   chapters: ChapterListItem[];
   notFound?: ManuscriptNotFound;
@@ -150,26 +157,51 @@ function selectProject(projects: Project[], projectId?: string | null) {
   return projects.find((item) => item.id === projectId) ?? projects[0] ?? null;
 }
 
-function selectBook(books: Book[], bookId: string | null | undefined, activeBookId: string | null | undefined) {
-  return books.find((item) => item.id === bookId) ?? books.find((item) => item.id === activeBookId) ?? books[0] ?? null;
+function preferredBook(books: Book[]) {
+  return books
+    .filter((item) => item.status === 'ready')
+    .sort((left, right) => right.chapterCount - left.chapterCount || left.order - right.order)[0] ?? books[0] ?? null;
+}
+
+function selectBook(books: Book[], bookId: string | null | undefined) {
+  return books.find((item) => item.id === bookId) ?? preferredBook(books);
+}
+
+export type ProjectRole = ProjectMembership['role'];
+
+export function projectRole(project: Project | null | undefined): ProjectRole | null {
+  return project?.currentMembership.role ?? null;
+}
+
+export function canEditProject(project: Project | null | undefined) {
+  const role = projectRole(project);
+  return role === 'owner' || role === 'admin' || role === 'editor';
+}
+
+export function canExportProject(project: Project | null | undefined) {
+  const role = projectRole(project);
+  return role === 'owner' || role === 'admin';
 }
 
 async function loadShelfWorkspace(api: ManuscriptApiClient, params: Pick<ManuscriptWorkspaceParams, 'projectId'>): Promise<ManuscriptShelfWorkspace> {
   const projectList = await api.listProjects();
   const projectSummary = selectProject(projectList.data, params.projectId);
   if (!projectSummary) {
-    return { books: [], jobs: [], project: null, projects: projectList.data, sessions: [] };
+    return { books: [], canCreateChats: false, canEditManuscript: false, canExportBooks: false, jobs: [], project: null, projects: projectList.data, sessions: [] };
   }
 
   const [project, bookList, jobList, chatList] = await Promise.all([
     api.getProject(projectSummary.id),
     api.listBooks(projectSummary.id),
-    api.listIndexingJobs(projectSummary.id),
+    api.listProjectJobs(projectSummary.id),
     api.listChatSessions(projectSummary.id),
   ]);
 
   return {
     books: bookList.data,
+    canCreateChats: canEditProject(project),
+    canEditManuscript: canEditProject(project),
+    canExportBooks: canExportProject(project),
     jobs: jobList.data,
     project,
     projects: projectList.data,
@@ -189,7 +221,7 @@ async function loadReaderWorkspace(api: ManuscriptApiClient, params: ManuscriptW
     api.listBooks(projectSummary.id),
     api.listChatSessions(projectSummary.id),
   ]);
-  const book = selectBook(bookList.data, params.bookId, project.activeBookId);
+  const book = selectBook(bookList.data, params.bookId);
   if (!book) {
     return { annotations: [], book: null, chapter: null, chapters: [], project, projects: projectList.data, sessions: chatList.data };
   }
@@ -202,7 +234,6 @@ async function loadReaderWorkspace(api: ManuscriptApiClient, params: ManuscriptW
   }
   const chapterSummary =
     chapterList.data.find((item) => item.id === params.chapterId) ??
-    chapterList.data.find((item) => item.isCurrent) ??
     chapterList.data[0] ??
     null;
   if (!chapterSummary) {
@@ -235,7 +266,7 @@ async function loadDraftWorkspace(api: ManuscriptApiClient, params: ManuscriptDr
   const projectList = await api.listProjects();
   const projectSummary = selectProject(projectList.data, params.projectId);
   if (!projectSummary) {
-    return { annotations: [], book: null, chapter: null, chapters: [], project: null, sessions: [] };
+    return { annotations: [], book: null, canCreateChats: false, canEditManuscript: false, chapter: null, chapters: [], project: null, sessions: [] };
   }
 
   const [project, bookList, chatList] = await Promise.all([
@@ -243,24 +274,25 @@ async function loadDraftWorkspace(api: ManuscriptApiClient, params: ManuscriptDr
     api.listBooks(projectSummary.id),
     api.listChatSessions(projectSummary.id),
   ]);
-  const book = selectBook(bookList.data, params.bookId, project.activeBookId);
+  const canEditManuscript = canEditProject(project);
+  const canCreateChats = canEditManuscript;
+  const book = selectBook(bookList.data, params.bookId);
   if (!book) {
-    return { annotations: [], book: null, chapter: null, chapters: [], project, sessions: chatList.data };
+    return { annotations: [], book: null, canCreateChats, canEditManuscript, chapter: null, chapters: [], project, sessions: chatList.data };
   }
 
   const chapterList = await api.listChapters(book.id);
   if (params.isNewChapter) {
-    return { annotations: [], book, chapter: null, chapters: chapterList.data, project, sessions: chatList.data };
+    return { annotations: [], book, canCreateChats, canEditManuscript, chapter: null, chapters: chapterList.data, project, sessions: chatList.data };
   }
 
   const chapterSummary =
     chapterList.data.find((item) => item.id === params.chapterId) ??
     chapterList.data.find((item) => item.status === 'draft' || item.hasDraft) ??
-    chapterList.data.find((item) => item.isCurrent) ??
     chapterList.data[0] ??
     null;
   if (!chapterSummary) {
-    return { annotations: [], book, chapter: null, chapters: chapterList.data, project, sessions: chatList.data };
+    return { annotations: [], book, canCreateChats, canEditManuscript, chapter: null, chapters: chapterList.data, project, sessions: chatList.data };
   }
 
   const [chapter, annotationList] = await Promise.all([
@@ -268,7 +300,7 @@ async function loadDraftWorkspace(api: ManuscriptApiClient, params: ManuscriptDr
     api.listChapterAnnotations(chapterSummary.id).catch(() => ({ data: [] as ReaderAnnotation[] })),
   ]);
 
-  return { annotations: annotationList.data, book, chapter, chapters: chapterList.data, project, sessions: chatList.data };
+  return { annotations: annotationList.data, book, canCreateChats, canEditManuscript, chapter, chapters: chapterList.data, project, sessions: chatList.data };
 }
 
 export function useManuscriptShelfQuery(api: ManuscriptApiClient, params: Pick<ManuscriptWorkspaceParams, 'projectId'>) {
@@ -307,7 +339,7 @@ export function useReaderSourceChapterQuery(api: ReaderSourceClient, chapterId: 
 export function useRefreshManuscriptBooksMutation(api: ManuscriptApiClient) {
   return useMutation({
     mutationFn: async (projectId: string) => {
-      const [bookList, jobList] = await Promise.all([api.listBooks(projectId), api.listIndexingJobs(projectId)]);
+      const [bookList, jobList] = await Promise.all([api.listBooks(projectId), api.listProjectJobs(projectId)]);
       return { books: bookList.data, jobs: jobList.data };
     },
   });
@@ -344,18 +376,27 @@ export function useDeleteBookMutation(api: ManuscriptApiClient) {
 
 export function useImportBookMutation(api: ManuscriptApiClient) {
   return useMutation({
-    mutationFn: async ({ projectId, body }: { body: Parameters<ManuscriptApiClient['importBookFile']>[1]; projectId: string }) => {
-      const [constraints, job] = await Promise.all([api.getImportConstraints(projectId), api.importBookFile(projectId, body)]);
-      return { constraints, job };
+    mutationFn: async ({
+      body,
+      idempotencyKey,
+      projectId,
+    }: {
+      body: Parameters<ManuscriptApiClient['importBookFile']>[1];
+      idempotencyKey: string;
+      projectId: string;
+    }) => {
+      const constraints = await api.getImportConstraints(projectId);
+      const started = await api.importBookFile(projectId, body, { idempotencyKey });
+      return { constraints, job: started.job };
     },
   });
 }
 
-export function useCancelIndexingJobMutation(api: ManuscriptApiClient) {
+export function useCancelJobMutation(api: ManuscriptApiClient) {
   return useMutation({
     mutationFn: async (jobId: string) => {
-      const canceled = await api.cancelIndexingJob(jobId);
-      return api.getIndexingJob(canceled.id);
+      const canceled = await api.cancelJob(jobId);
+      return api.getJob(canceled.id);
     },
   });
 }
@@ -369,13 +410,21 @@ function delay(ms: number) {
 
 export function useExportBookMutation(api: ManuscriptApiClient) {
   return useMutation({
-    mutationFn: async ({ bookId, format }: { bookId: string; format: 'fb2' | 'epub' }) => {
-      const created = await api.createBookExport(bookId, { format });
-      let job = created;
+    mutationFn: async ({
+      bookId,
+      format,
+      idempotencyKey,
+    }: {
+      bookId: string;
+      format: 'fb2' | 'epub';
+      idempotencyKey: string;
+    }) => {
+      const created = await api.createBookExport(bookId, { format }, { idempotencyKey });
+      let job = created.job;
       let attempts = 0;
-      while (job.status !== 'ready' && job.status !== 'failed' && attempts < exportPollMaxAttempts) {
+      while (!['succeeded', 'failed', 'canceled', 'expired'].includes(job.status) && attempts < exportPollMaxAttempts) {
         await delay(exportPollDelayMs);
-        job = await api.getExportJob(created.id);
+        job = await api.getJob(created.jobId);
         attempts += 1;
       }
       return job;
@@ -473,11 +522,18 @@ export function useChapterAgentSuggestionsQuery(api: ManuscriptApiClient, chapte
   });
 }
 
-export function useRequestAgentSuggestionMutation(api: ManuscriptApiClient) {
+export function useStartAgentRunMutation(api: ManuscriptApiClient) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ chapterId, body }: { body: Parameters<ManuscriptApiClient['requestAgentSuggestion']>[1]; chapterId: string }) =>
-      api.requestAgentSuggestion(chapterId, body),
+    mutationFn: ({
+      body,
+      chapterId,
+      idempotencyKey,
+    }: {
+      body: Parameters<ManuscriptApiClient['startAgentRun']>[1];
+      chapterId: string;
+      idempotencyKey: string;
+    }) => api.startAgentRun(chapterId, body, { idempotencyKey }),
     onSuccess: (_data, variables) => queryClient.invalidateQueries({ queryKey: chapterAgentSuggestionsKey(variables.chapterId) }),
   });
 }
@@ -498,7 +554,8 @@ export function useApproveAgentSuggestionMutation(api: ManuscriptApiClient) {
 export function useRejectAgentSuggestionMutation(api: ManuscriptApiClient) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (suggestionId: string) => api.rejectAgentSuggestion(suggestionId),
+    mutationFn: ({ expectedChapterRevision, suggestionId }: { expectedChapterRevision: number; suggestionId: string }) =>
+      api.rejectAgentSuggestion(suggestionId, { expectedChapterRevision }),
     onSuccess: (result) => {
       if (result.chapter) {
         queryClient.invalidateQueries({ queryKey: chapterAgentSuggestionsKey(result.chapter.id) });

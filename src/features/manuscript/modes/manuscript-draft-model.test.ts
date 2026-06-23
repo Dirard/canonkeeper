@@ -23,24 +23,21 @@ describe('draft model', () => {
     expect(chapterToDraftText(chapter)).toBe('Первый абзац.\n\nВторой абзац.');
   });
 
-  it('emits clientKeys for brand-new paragraphs without fabricating server ids', () => {
+  it('omits ids for brand-new paragraphs without fabricating server ids', () => {
     expect(toParagraphInputs('Первый\n\n\nВторой ', '17', 'Северный суд')).toEqual([
       {
-        clientKey: 'heading',
         order: 1,
         kind: 'heading',
         text: 'Глава 17. Северный суд',
         markdown: '## Глава 17. Северный суд',
       },
       {
-        clientKey: 'draft-2',
         order: 2,
         kind: 'paragraph',
         text: 'Первый',
         markdown: 'Первый',
       },
       {
-        clientKey: 'draft-3',
         order: 3,
         kind: 'paragraph',
         text: 'Второй',
@@ -62,7 +59,6 @@ describe('draft model', () => {
     expect(inputs[1]?.id).toBe('srv-1');
     expect(inputs[2]?.id).toBe('srv-2');
     expect(inputs[3]?.id).toBeUndefined();
-    expect(inputs[3]?.clientKey).toBe('draft-4');
   });
 
   it('keeps formatting, metrics and next chapter numbering deterministic', () => {

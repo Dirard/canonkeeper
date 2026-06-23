@@ -13,7 +13,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create a user account. */
+        /**
+         * Create a user account.
+         * @description Creates a new account/session with strict local Origin and CSRF before cookie mutation. Responses are no-store and do not expose existing account state.
+         */
         post: operations["registerUser"];
         delete?: never;
         options?: never;
@@ -30,7 +33,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Authenticate with email and password. */
+        /**
+         * Authenticate with email and password.
+         * @description Exchanges credentials with strict local Origin and CSRF before cookie mutation. Errors are non-enumerating and responses are no-store.
+         */
         post: operations["loginUser"];
         delete?: never;
         options?: never;
@@ -47,25 +53,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invalidate the current session. */
+        /**
+         * Invalidate the current session.
+         * @description Invalidates the current session with strict local Origin and CSRF before clearing the cookie. Responses are no-store.
+         */
         post: operations["logoutUser"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Return the authenticated user. */
-        get: operations["getCurrentUser"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -82,7 +74,7 @@ export interface paths {
         /** List projects available to the user. */
         get: operations["listProjects"];
         put?: never;
-        /** Create a new saga project. */
+        /** Create a new project. */
         post: operations["createProject"];
         delete?: never;
         options?: never;
@@ -153,7 +145,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return machine-readable import/dropzone constraints. */
+        /** Return machine-readable import constraints. */
         get: operations["getImportConstraints"];
         put?: never;
         post?: never;
@@ -172,59 +164,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload FB2/EPUB and start parsing plus indexing. */
+        /**
+         * Import manuscript file
+         * @description Direct multipart upload with file plus metadata/options. URL-fetch and uploaded-file-id imports are out of scope; upload controls require server-generated storage key, filename non-use as path, content sniffing, archive bounds and parser quarantine.
+         */
         post: operations["importBookFile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/projects/{projectId}/indexing-jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List active or recent indexing jobs for a project. */
-        get: operations["listIndexingJobs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/indexing-jobs/{jobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get import/indexing progress. */
-        get: operations["getIndexingJob"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/indexing-jobs/{jobId}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cancel an import/indexing job when the UI exposes a cancel action. */
-        post: operations["cancelIndexingJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -240,25 +184,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start a book export job. */
+        /**
+         * Start a book export job.
+         * @description Owner/admin full-manuscript export start. Editors/viewers receive 403; output is no-store/private and retention is documented in security matrix.
+         */
         post: operations["createBookExport"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/export-jobs/{exportJobId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Poll a book export job and retrieve its download URL when ready. */
-        get: operations["getExportJob"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -290,7 +220,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get chapter content for reading or draft editing. */
+        /** Get chapter content for published or draft editing. */
         get: operations["getChapter"];
         put?: never;
         post?: never;
@@ -329,7 +259,7 @@ export interface paths {
         /** List reader annotations anchored to a chapter. */
         get: operations["listChapterAnnotations"];
         put?: never;
-        /** Create a highlight, note, or bookmark anchored to a reader selection. */
+        /** Create a reader annotation anchored to a locator. */
         post: operations["createChapterAnnotation"];
         delete?: never;
         options?: never;
@@ -362,10 +292,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search indexed canon, chapters, reader annotations, and materials. */
-        get: operations["searchProject"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Search private project content
+         * @description Read-only POST body query. Query text stays out of URLs; cursor is bound to request fingerprint; snippets are bounded and synthetic in examples.
+         */
+        post: operations["searchProject"];
         delete?: never;
         options?: never;
         head?: never;
@@ -379,7 +312,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List chat sessions for the project sidebar. */
+        /** List chat sessions for a project. */
         get: operations["listChatSessions"];
         put?: never;
         /** Create a chat session. */
@@ -419,11 +352,7 @@ export interface paths {
         /** List messages in a chat session. */
         get: operations["listChatMessages"];
         put?: never;
-        /**
-         * Send a user message and receive an assistant turn, optionally as an OpenAI-style stream.
-         * @description When `stream` is true, the response is a normal LLM text/event-stream with text deltas, reasoning/tool-call events, completion, and errors. Domain objects are not streamed as special events. If the assistant creates structured material, it emits a trigger marker in ordinary text, and the client fetches the relevant resource separately.
-         */
-        post: operations["sendChatMessage"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -438,8 +367,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get reader references referenced from assistant text.
-         * @description The chat stream itself remains ordinary LLM streaming. The client detects a reader reference trigger in message text and calls this endpoint to fetch formatted reader references. Agent suggestions are separate backend entities and are fetched through the Agent endpoints.
+         * Get chat reader-reference artifact
+         * @description Reads a persisted chat artifact created by an assistant turn. Clients discover artifact ids from ChatMessage.references, ChatTurnSnapshot.artifacts or artifact.ready SSE events, not by parsing assistant text.
          */
         get: operations["getChatArtifact"];
         put?: never;
@@ -457,11 +386,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List draft agent suggestions for a chapter. */
+        /**
+         * List draft agent suggestions for a chapter.
+         * @description Lists persisted backend-created suggestions for a chapter. Clients may filter by the assistant turn or batch identifiers carried in structured message references and turn snapshots.
+         */
         get: operations["listAgentSuggestions"];
         put?: never;
-        /** Ask the draft agent for a targeted suggestion on a chapter. */
-        post: operations["requestAgentSuggestion"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -511,8 +442,359 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reject a backend-created agent suggestion. */
+        /**
+         * Reject a backend-created agent suggestion.
+         * @description Rejects a pending backend-created suggestion with the same expectedChapterRevision guard used by approval. Stale revisions or terminal suggestions return 409 Problem.
+         */
         post: operations["rejectAgentSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read sanitized auth session
+         * @description Returns sanitized user/session metadata only. No cookies, JWTs, refresh tokens, invite secrets or raw CSRF secrets are present. Cache-Control: no-store.
+         */
+        get: operations["getCurrentUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bootstrap CSRF token
+         * @description Returns opaque CSRF material with no-store caching and no session secret exposure. Token rotates around login/logout/session rotation.
+         */
+        get: operations["getCsrfToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate active session
+         * @description Rotates the server session and refreshes CSRF material after sensitive auth state changes.
+         */
+        post: operations["rotateSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project members
+         * @description Owner/admin project member listing; viewer/editor callers are denied to avoid unnecessary participant PII exposure.
+         */
+        get: operations["listProjectMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove project member
+         * @description Immediately removes non-owner access; owner/last-owner removal is out of scope and returns 409. Audit retains redacted access-control event.
+         */
+        delete: operations["removeProjectMember"];
+        options?: never;
+        head?: never;
+        /**
+         * Update member role
+         * @description Owner/admin role management. Owner membership is immutable; ownership transfer/demotion is out of scope and returns 409.
+         */
+        patch: operations["updateProjectMemberRole"];
+        trace?: never;
+    };
+    "/projects/{projectId}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project invitations
+         * @description Owner/admin only. Does not expose raw invite tokens; invitation email PII is hidden from viewer/editor roles.
+         */
+        get: operations["listProjectInvitations"];
+        put?: never;
+        /**
+         * Create project invitation
+         * @description Owner/admin only. Invite token is unguessable, stored hashed and never returned.
+         */
+        post: operations["createProjectInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-invitations/{invitationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel project invitation
+         * @description Owner/admin only; canceled/expired outcomes use leak-safe stable problem codes.
+         */
+        post: operations["cancelProjectInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-invitations/{invitationId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept project invitation
+         * @description Authenticated user accepts an opaque invitation id discovered through listMyProjectInvitations; provider-verified canonical email must match the invitation email, otherwise responses are leak-safe 404/403.
+         */
+        post: operations["acceptProjectInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List shared project jobs
+         * @description Shared lifecycle for import, indexing, export, chat turn and agent run work.
+         */
+        get: operations["listProjectJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{projectId}/indexing-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start project indexing or reindexing
+         * @description Idempotent start command returning the shared Job envelope.
+         */
+        post: operations["startProjectIndexing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read shared job
+         * @description Returns current job state. Direct-ID access resolves owning project membership and uses leak-safe 404 for inaccessible jobs. Export job downloadUrl/results are owner/admin only; editor/viewer reads omit restricted result data or return 403/404.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/{jobId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel shared job
+         * @description Idempotent cancel. Terminal jobs remain immutable and return current state.
+         */
+        post: operations["cancelJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chats/{chatId}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create chat turn
+         * @description Command creates persisted user message and async turn job. It does not stream response bytes; clients follow links.events or links.poll.
+         */
+        post: operations["createChatTurn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat-turns/{turnId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read chat turn snapshot
+         * @description Polling recovery for turn state, latest event id and persisted message/artifact/suggestion resources.
+         */
+        get: operations["getChatTurn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat-turns/{turnId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream chat turn events
+         * @description Resumable SSE. Last-Event-ID and afterEventId resume from durable event log; event log expiry returns 410 stream_expired and clients recover with GET /chat-turns/{turnId}.
+         */
+        get: operations["streamChatTurnEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chapters/{chapterId}/agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start agent run
+         * @description Starts persisted suggestion generation as a shared Job. Suggestions are durable resources; raw prompts and runtime traces are not exposed in canonical payloads.
+         */
+        post: operations["startAgentRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List invitations addressed to current user.
+         * @description Authenticated user with provider-verified canonical email lists opaque invitation ids addressed to that email, including leak-safe project and inviter context needed before accepting. Acceptance credential material is never returned or accepted in URLs.
+         */
+        get: operations["listMyProjectInvitations"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -527,29 +809,34 @@ export interface components {
         Id: string;
         /** Format: date-time */
         DateTime: string;
+        /** @description RFC 9457-style problem details with stable machine code and redacted request id. */
         Problem: {
-            /** Format: uri */
-            type?: string;
+            /**
+             * Format: uri-reference
+             * @default about:blank
+             */
+            type: string;
             title: string;
             status: number;
             detail?: string;
-            instance?: string;
-            errors?: components["schemas"]["ValidationError"][];
-        } & {
-            [key: string]: unknown;
-        };
-        ValidationError: {
-            path: string;
-            message: string;
+            code: string;
+            requestId: string;
+            errors?: components["schemas"]["ValidationIssue"][];
         };
         PageMeta: {
-            nextCursor?: string | null;
             hasMore: boolean;
+            /** @description Opaque cursor bound to request fingerprint. */
+            nextCursor: string | null;
         };
         User: {
             id: components["schemas"]["Id"];
-            /** Format: email */
+            /**
+             * Format: email
+             * @description Provider-verified canonical email used for invitation discovery and acceptance. Backends expose this after identity-provider verification; the API does not define a custom email-verification flow.
+             */
             email: string;
+            /** @description True only when the identity provider has verified the canonical email currently exposed on the session user. */
+            emailVerified: boolean;
             displayName: string;
             /** Format: uri */
             avatarUrl?: string | null;
@@ -570,7 +857,7 @@ export interface components {
             /** Format: password */
             password: string;
             /**
-             * @description Visible login checkbox. Backend may use it to choose session duration without exposing token mechanics to the frontend.
+             * @description Caller preference for a longer-lived session. The server may use it to choose session duration without exposing token mechanics.
              * @default false
              */
             rememberMe: boolean;
@@ -580,15 +867,15 @@ export interface components {
         };
         Project: {
             id: components["schemas"]["Id"];
-            ownerId: components["schemas"]["Id"];
             title: string;
             description?: string | null;
             bookCount: number;
             chapterCount: number;
             wordCount: number;
-            activeBookId?: components["schemas"]["Id"] | null;
             createdAt: components["schemas"]["DateTime"];
             updatedAt: components["schemas"]["DateTime"];
+            /** @description Membership and permission context of the authenticated caller in this project, returned without exposing the full member list to viewer/editor callers. */
+            currentMembership: components["schemas"]["ProjectMembership"];
         };
         ProjectList: {
             data: components["schemas"]["Project"][];
@@ -601,33 +888,25 @@ export interface components {
         UpdateProjectRequest: {
             title?: string;
             description?: string | null;
-            activeBookId?: components["schemas"]["Id"] | null;
         };
         /** @enum {string} */
-        BookStatus: "draft" | "indexing" | "ready" | "error";
+        BookStatus: "draft" | "ready" | "error";
         /** @enum {string} */
-        IndexingStatus: "not_started" | "queued" | "running" | "ready" | "failed";
+        IndexingStatus: "not_started" | "ready" | "failed";
+        /** @description Stable backend index state for the book. Active import/indexing progress, cancellation and errors are exposed through the shared Job lifecycle. */
         IndexingSummary: {
             status: components["schemas"]["IndexingStatus"];
-            progress: number;
-            /** @description Active import/indexing job used by book cards to show badges such as `9/14`. */
-            activeJobId?: components["schemas"]["Id"] | null;
-            currentUnit: number;
-            totalUnits: number;
             lastIndexedAt: components["schemas"]["DateTime"] | null;
-            message?: string | null;
         };
         Book: {
             id: components["schemas"]["Id"];
             projectId: components["schemas"]["Id"];
             title: string;
             subtitle: string | null;
-            /** @description Zero-based volume order inside the saga/project. */
+            /** @description One-based book order inside the project. */
             order: number;
-            /** @description Visible volume number such as `I`, `II`, `III`, or `IV`. */
+            /** @description Stable volume ordinal such as `I`, `II`, `III`, or `IV`; clients may derive local presentation labels. */
             displayNumber: string;
-            /** @description Visible label such as `Книга II` used by cards, breadcrumbs, and references. */
-            displayLabel: string;
             coverColor?: string | null;
             status: components["schemas"]["BookStatus"];
             chapterCount: number;
@@ -672,79 +951,43 @@ export interface components {
              */
             allowedMimeTypes: ("application/epub+zip" | "application/x-fictionbook+xml" | "text/xml" | "application/xml")[];
             /**
-             * @description 50 MB limit shown in the import dropzone.
+             * @description Maximum accepted upload size in bytes.
              * @constant
              */
             maxFileSizeBytes: 52428800;
         };
         ImportBookRequest: {
-            /**
-             * Format: binary
-             * @description FB2 or EPUB file. Must satisfy `ImportConstraints`: .fb2/.epub and max 50 MB.
-             */
+            /** Format: binary */
             file: string;
-            title?: string;
-        };
-        /** @enum {string} */
-        IndexingJobStatus: "queued" | "running" | "ready" | "failed" | "canceled";
-        /** @enum {string} */
-        IndexingJobStage: "queued" | "parsing" | "chunking" | "embedding" | "indexing" | "vectorizing" | "finalizing" | "ready" | "failed" | "canceled";
-        IndexingJob: {
-            id: components["schemas"]["Id"];
-            projectId: components["schemas"]["Id"];
-            bookId?: components["schemas"]["Id"] | null;
-            status: components["schemas"]["IndexingJobStatus"];
-            stage: components["schemas"]["IndexingJobStage"];
-            progress: number;
-            /** @description Current progress unit, e.g. 9 in `9 из 14`. */
-            currentUnit: number;
-            /** @description Total progress units, e.g. 14 in `9 из 14`. */
-            totalUnits: number;
-            /** @description Human-readable unit label such as chapters, fragments, or paragraphs. */
-            unitLabel: string;
-            canCancel: boolean;
-            stageLabel?: string;
-            sourceFileName?: string | null;
-            errorMessage?: string | null;
-            failureCode?: string | null;
-            createdAt: components["schemas"]["DateTime"];
-            updatedAt: components["schemas"]["DateTime"];
-        };
-        IndexingJobList: {
-            data: components["schemas"]["IndexingJob"][];
+            metadata?: {
+                title?: string;
+                sourceFileName?: string;
+            };
+            options?: {
+                /**
+                 * @default new_book
+                 * @enum {string}
+                 */
+                importMode: "append" | "new_book";
+            };
         };
         /** @enum {string} */
         ExportFormat: "fb2" | "epub";
         CreateExportRequest: {
             format: components["schemas"]["ExportFormat"];
         };
-        ExportJob: {
-            id: components["schemas"]["Id"];
-            bookId: components["schemas"]["Id"];
-            format: components["schemas"]["ExportFormat"];
-            /** @enum {string} */
-            status: "queued" | "running" | "ready" | "failed";
-            /** Format: uri */
-            downloadUrl?: string | null;
-            errorMessage?: string | null;
-            createdAt: components["schemas"]["DateTime"];
-            updatedAt: components["schemas"]["DateTime"];
-            expiresAt?: components["schemas"]["DateTime"] | null;
-        };
         /** @enum {string} */
-        ChapterViewMode: "reading" | "draft";
+        ChapterContentVariant: "published" | "draft";
         /** @enum {string} */
         ChapterStatus: "draft" | "published" | "publishing" | "publish_failed" | "stale" | "conflict";
         ChapterNavigationItem: {
             id: components["schemas"]["Id"];
             title: string;
-            /** @description Visible chapter number, e.g. `11`. */
+            /** @description Stable chapter ordinal used for ordering and references. */
             displayNumber: string;
-            /** @description Renderable previous/next label, e.g. `11. Колокол южного ряда`. */
-            displayLabel: string;
         };
         ChapterNavigation: {
-            /** @description Visible chapter number/label used in reader header/footer. */
+            /** @description Visible chapter number/label used by clients for chapter navigation. */
             displayNumber: string;
             /** @description One-based chapter position in the current book. */
             position: number;
@@ -755,9 +998,9 @@ export interface components {
             readingTimeMinutes: number;
             previousChapterId: components["schemas"]["Id"] | null;
             nextChapterId: components["schemas"]["Id"] | null;
-            /** @description Renderable previous chapter control; null at the beginning of a book. */
+            /** @description Previous chapter summary; null at the beginning of a book. */
             previous: components["schemas"]["ChapterNavigationItem"] | null;
-            /** @description Renderable next chapter control; null at the end of a book. */
+            /** @description Next chapter summary; null at the end of a book. */
             next: components["schemas"]["ChapterNavigationItem"] | null;
         };
         Chapter: {
@@ -765,11 +1008,11 @@ export interface components {
             bookId: components["schemas"]["Id"];
             title: string;
             order: number;
-            viewMode: components["schemas"]["ChapterViewMode"];
+            contentVariant: components["schemas"]["ChapterContentVariant"];
             status: components["schemas"]["ChapterStatus"];
             paragraphs: components["schemas"]["ChapterParagraph"][];
             wordCount: number;
-            /** @description Revision of the payload returned for the selected viewMode. */
+            /** @description Revision of the payload returned for the selected content variant. */
             revision: number;
             draftRevision: number;
             publishedRevision: number | null;
@@ -787,37 +1030,36 @@ export interface components {
             kind: "paragraph" | "heading" | "quote" | "list_item" | "scene_break";
             /** @description Plain text derived from markdown for search, references, and compact previews. */
             text: string;
-            /** @description Canonical editable paragraph content. Supports the draft toolbar subset: bold, italic, heading, quote, list item, and link markup. */
+            /** @description Canonical editable paragraph content in the supported manuscript markdown profile: bold, italic, heading, quote, list item, scene break, and link markup. */
             markdown: string;
         };
-        /** @description Input shape for draft saves. Existing paragraphs keep `id`; newly inserted paragraphs omit `id` and may send `clientKey` so the frontend can reconcile the saved response. */
+        /** @description Input shape for draft saves. Existing paragraphs keep `id`; newly inserted paragraphs omit `id` until the backend assigns stable paragraph IDs after save/indexing. */
         ChapterParagraphInput: {
             id?: components["schemas"]["Id"] | null;
-            /** @description Temporary frontend key for unsaved paragraphs. Backend returns stable paragraph IDs in `ChapterParagraph` after save/indexing. */
-            clientKey?: string | null;
             order: number;
             /** @enum {string} */
             kind: "paragraph" | "heading" | "quote" | "list_item" | "scene_break";
             /** @description Optional plain-text mirror; backend may derive it from markdown. */
             text?: string | null;
-            /** @description Canonical editable paragraph content using the supported draft toolbar markdown subset. */
+            /** @description Canonical editable paragraph content in the supported manuscript markdown profile. */
             markdown: string;
         };
-        /** @description Lightweight chapter structure item for TOC/sidebar/list screens. Full paragraph content is returned only by `/chapters/{chapterId}`. */
+        /** @description Lightweight chapter structure item for backend navigation and chapter lists. Full paragraph content is returned only by `/chapters/{chapterId}`. */
         ChapterSummary: {
             id: components["schemas"]["Id"];
             bookId: components["schemas"]["Id"];
             title: string;
             order: number;
-            /** @description Visible chapter number/label used in structure navigation. */
+            /** @description Stable chapter ordinal used for ordering and references. */
             displayNumber: string;
             status: components["schemas"]["ChapterStatus"];
             wordCount: number;
             hasDraft: boolean;
-            isCurrent: boolean;
         };
+        /** @description Cursor-paginated chapter summaries. */
         ChapterList: {
             data: components["schemas"]["ChapterSummary"][];
+            meta: components["schemas"]["PageMeta"];
         };
         CreateChapterRequest: {
             title: string;
@@ -830,33 +1072,42 @@ export interface components {
             expectedRevision: number;
         };
         PublishChapterRequest: {
-            /** @description Draft revision the frontend is publishing. Backend returns 409 if the draft changed. */
+            /** @description Draft revision expected by the caller for publication. The server returns 409 if the draft changed. */
             expectedDraftRevision: number;
         };
         /** @description Optional precision range inside the paragraph identified by a surrounding ReaderLocator. */
         TextRange: {
             startOffset: number;
             endOffset: number;
+            /** @description Bounded selected text preview; not a full manuscript body. */
             quote?: string | null;
         };
+        /** @description Canonical reader locator. Source context belongs in wrapper resources such as annotations, search results or chat artifacts, not in this canonical anchor. */
         ReaderLocator: {
             projectId: components["schemas"]["Id"];
             bookId: components["schemas"]["Id"];
             chapterId: components["schemas"]["Id"];
-            /** @description Text version this locator points to. Chat reader references normally use `reading`; agent suggestions and draft selections normally use `draft`. */
-            targetView: components["schemas"]["ChapterViewMode"];
-            /** @description Optional chapter revision for stale/conflict-sensitive anchors. */
-            revision?: number | null;
-            /** @description Stable paragraph anchor used by assistant trigger markers when the reference points to a specific paragraph. */
+            /** @description Text version this locator points to. Public references normally use `published`; draft selections use `draft`. */
+            targetView: components["schemas"]["ChapterContentVariant"];
+            /** @description Chapter revision for stale/conflict-sensitive anchors. */
+            revision: number;
+            /** @description Stable paragraph anchor used by assistant references when the reference points to a specific paragraph. */
             paragraphId?: components["schemas"]["Id"] | null;
             range?: components["schemas"]["TextRange"] | null;
             annotationId?: components["schemas"]["Id"] | null;
-            /** @enum {string} */
-            source?: "chat_reference" | "search_result" | "annotation" | "manual";
         };
-        ReaderReferenceLocator: components["schemas"]["ReaderLocator"] & {
+        ReaderReferenceLocator: {
+            projectId: components["schemas"]["Id"];
+            bookId: components["schemas"]["Id"];
+            chapterId: components["schemas"]["Id"];
+            /** @description Text version this locator points to. Public references normally use `published`; draft selections use `draft`. */
+            targetView: components["schemas"]["ChapterContentVariant"];
+            /** @description Chapter revision for stale/conflict-sensitive anchors. */
+            revision: number;
             /** @description Required stable paragraph anchor for interactive reader references from chat/search artifacts. */
             paragraphId: components["schemas"]["Id"];
+            range?: components["schemas"]["TextRange"] | null;
+            annotationId?: components["schemas"]["Id"] | null;
         };
         /** @enum {string} */
         ReaderAnnotationKind: "highlight" | "note" | "bookmark";
@@ -869,13 +1120,12 @@ export interface components {
             chapterId: components["schemas"]["Id"];
             kind: components["schemas"]["ReaderAnnotationKind"];
             locator: components["schemas"]["ReaderLocator"];
-            /** @description Selected text shown on highlight/note cards; null for pure bookmarks. */
+            /** @description Bounded selected text preview shown on cards; null for pure bookmarks. */
             quote?: string | null;
             /** @description User note text; null for highlights/bookmarks without note text. */
             body?: string | null;
             color?: string | null;
             status: components["schemas"]["ReaderAnnotationStatus"];
-            createdFromSelection: boolean;
             tags?: string[];
             createdAt: components["schemas"]["DateTime"];
             updatedAt: components["schemas"]["DateTime"];
@@ -924,8 +1174,10 @@ export interface components {
             kind: "bookmark";
         };
         ReaderAnnotation: components["schemas"]["HighlightAnnotation"] | components["schemas"]["NoteAnnotation"] | components["schemas"]["BookmarkAnnotation"];
+        /** @description Cursor-paginated reader annotations. */
         ReaderAnnotationList: {
             data: components["schemas"]["ReaderAnnotation"][];
+            meta: components["schemas"]["PageMeta"];
         };
         CreateHighlightAnnotationRequest: {
             /**
@@ -934,11 +1186,10 @@ export interface components {
              */
             kind: "highlight";
             locator: components["schemas"]["ReaderReferenceLocator"];
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote: string;
             body?: string | null;
             color: string;
-            /** @default true */
-            createdFromSelection: boolean;
             tags?: string[];
         };
         CreateNoteAnnotationRequest: {
@@ -948,11 +1199,10 @@ export interface components {
              */
             kind: "note";
             locator: components["schemas"]["ReaderLocator"];
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote?: string | null;
             body: string;
             color?: string | null;
-            /** @default true */
-            createdFromSelection: boolean;
             tags?: string[];
         };
         CreateBookmarkAnnotationRequest: {
@@ -962,11 +1212,10 @@ export interface components {
              */
             kind: "bookmark";
             locator: components["schemas"]["ReaderLocator"];
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote?: string | null;
             body?: string | null;
             color?: string | null;
-            /** @default false */
-            createdFromSelection: boolean;
             tags?: string[];
         };
         CreateReaderAnnotationRequest: components["schemas"]["CreateHighlightAnnotationRequest"] | components["schemas"]["CreateNoteAnnotationRequest"] | components["schemas"]["CreateBookmarkAnnotationRequest"];
@@ -976,6 +1225,7 @@ export interface components {
              * @enum {string}
              */
             kind: "highlight";
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote?: string;
             body?: string | null;
             color?: string;
@@ -988,6 +1238,7 @@ export interface components {
              * @enum {string}
              */
             kind: "note";
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote?: string | null;
             body?: string;
             color?: string | null;
@@ -1000,6 +1251,7 @@ export interface components {
              * @enum {string}
              */
             kind: "bookmark";
+            /** @description Bounded client-selected quote used only for locator validation. */
             quote?: string | null;
             body?: string | null;
             color?: string | null;
@@ -1011,12 +1263,13 @@ export interface components {
          * @default all
          * @enum {string}
          */
-        SearchScope: "all" | "chapters" | "annotations" | "canon" | "materials";
+        SearchScope: "all" | "chapters" | "annotations";
         SearchResult: {
             id: components["schemas"]["Id"];
             /** @enum {string} */
-            kind: "chapter" | "annotation" | "canon_fact" | "material";
+            kind: "chapter" | "annotation";
             title: string;
+            /** @description Bounded search snippet; not a full manuscript body. */
             excerpt: string;
             score?: number;
             locator: components["schemas"]["ReaderLocator"];
@@ -1025,13 +1278,20 @@ export interface components {
             query: string;
             scope: components["schemas"]["SearchScope"];
             data: components["schemas"]["SearchResult"][];
+            /** @description Server fingerprint binding cursor to request body. */
+            cursorFingerprint?: string;
+            /**
+             * @description Snippets are bounded synthetic/redacted excerpts, not full manuscript bodies.
+             * @default bounded_240_chars
+             */
+            snippetPolicy: string;
+            meta: components["schemas"]["PageMeta"];
         };
         ChatSession: {
             id: components["schemas"]["Id"];
             projectId: components["schemas"]["Id"];
             title: string;
             messageCount: number;
-            lastMessagePreview?: string | null;
             createdAt: components["schemas"]["DateTime"];
             updatedAt: components["schemas"]["DateTime"];
         };
@@ -1048,33 +1308,27 @@ export interface components {
         /** @enum {string} */
         AgentTask: "canon" | "punctuation" | "style" | "continuity" | "rewrite";
         AgentOptions: {
-            /** @description Agent task chips selected in the UI, e.g. canon, punctuation, or style. */
+            /** @description Requested backend analysis tasks, e.g. canon, punctuation, or style. */
             tasks?: components["schemas"]["AgentTask"][];
             /**
-             * @default current_chapter
+             * @default chapter
              * @enum {string}
              */
-            scope: "current_selection" | "current_chapter" | "current_book" | "project";
+            scope: "selection" | "chapter" | "book" | "project";
         };
         /** @enum {string} */
-        ChatRole: "user" | "assistant" | "system" | "tool";
+        ChatRole: "user" | "assistant";
         /** @enum {string} */
-        ChatMessagePartType: "text" | "reasoning" | "tool_call" | "tool_result" | "trigger";
+        ChatMessagePartType: "text";
         /** @enum {string} */
         ChatMessagePartStatus: "pending" | "running" | "completed" | "failed";
         ChatMessagePart: {
             type: components["schemas"]["ChatMessagePartType"];
+            /** @description Canonical persisted part text; clients derive local labels from type/status/text. */
             text: string;
             /** @description Stable ordering copied from stream events where available. */
             sequence?: number | null;
-            toolName?: string | null;
-            toolCallId?: string | null;
             status?: components["schemas"]["ChatMessagePartStatus"] | null;
-            /** @description Short chip label such as `Думал 12 сек`, `Поиск`, or `3 фрагмента`. */
-            label?: string | null;
-            metadata?: {
-                [key: string]: unknown;
-            };
             startedAt?: components["schemas"]["DateTime"] | null;
             completedAt?: components["schemas"]["DateTime"] | null;
         };
@@ -1082,140 +1336,30 @@ export interface components {
             id: components["schemas"]["Id"];
             chatId: components["schemas"]["Id"];
             role: components["schemas"]["ChatRole"];
-            /** @description Assistant/user text. Assistant text may contain trigger markers such as `::ck-trigger{kind="reader_references" artifactId="..."}` or `::ck-trigger{kind="agent_suggestions_ready" chapterId="..."}`. The client turns those markers into interactive UI by fetching the relevant resource. */
+            /** @description Assistant/user text content. Artifact and suggestion references are persisted as structured resources and event payloads, not embedded text directives. */
             content: string;
-            /** @description Persisted render parts for reasoning blocks, tool chips, trigger markers, and visible text after the stream completes. */
+            /** @description Persisted visible text parts after the turn completes. */
             parts: components["schemas"]["ChatMessagePart"][];
-            triggers: components["schemas"]["ChatTrigger"][];
             createdAt: components["schemas"]["DateTime"];
+            /** @description Backend-owned references to artifacts or suggestions associated with the message. */
+            references: components["schemas"]["ChatMessageReference"][];
         };
         ChatMessageList: {
             data: components["schemas"]["ChatMessage"][];
             meta: components["schemas"]["PageMeta"];
         };
-        CreateChatMessageRequest: {
-            content: string;
-            readerContext?: components["schemas"]["ReaderLocator"] | null;
-            /** @description Explicit reader/draft context selected by the user or UI before sending the agent request. */
-            contextLocators?: components["schemas"]["ReaderLocator"][];
-            agentOptions?: components["schemas"]["AgentOptions"] | null;
-            /**
-             * @description When true, return a normal LLM `text/event-stream`. When false, return a completed JSON turn.
-             * @default true
-             */
-            stream: boolean;
-        };
-        /** @enum {string} */
-        LlmStreamEventType: "text_delta" | "reasoning_delta" | "tool_call" | "tool_result" | "completed" | "error";
-        /** @description Provider-neutral JSON data payload for ordinary LLM text/event-stream chunks. Domain objects are not special stream events; they are referenced by trigger markers in text. */
-        LlmStreamEvent: components["schemas"]["LlmTextDeltaEvent"] | components["schemas"]["LlmReasoningDeltaEvent"] | components["schemas"]["LlmToolCallEvent"] | components["schemas"]["LlmToolResultEvent"] | components["schemas"]["LlmCompletedEvent"] | components["schemas"]["LlmErrorEvent"];
-        LlmTextDeltaEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "text_delta";
-            /** @description Monotonic per-stream event sequence used by clients to render stable reasoning/tool/text order. */
-            sequence: number;
-            /** @description Assistant-visible text token delta. Trigger markers, when present, appear in this ordinary text. */
-            delta: string;
-        };
-        LlmReasoningDeltaEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "reasoning_delta";
-            sequence: number;
-            /** @description Reasoning/status text delta shown in the agent/reasoning area when the selected provider exposes it. */
-            delta: string;
-        };
-        LlmToolCallEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "tool_call";
-            sequence: number;
-            toolCallId: string;
-            toolName: string;
-            /** @description Optional short display payload for the tool chip. */
-            delta?: string | null;
-        };
-        LlmToolResultEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "tool_result";
-            sequence: number;
-            toolCallId: string;
-            toolName: string;
-            /** @description Human-readable tool result summary for the stream UI. */
-            delta: string;
-        };
-        LlmCompletedEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "completed";
-            sequence: number;
-            /** @description Persisted assistant message id created for this completed turn. */
-            assistantMessageId: components["schemas"]["Id"];
-            turnId: string;
-            /** @enum {string} */
-            finishReason: "stop" | "length" | "content_filter";
-        };
-        LlmErrorEvent: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "error";
-            sequence: number;
-            /** @description Human-readable error message safe to show in the chat UI. */
-            message: string;
-            /** @enum {string} */
-            finishReason: "tool_error" | "content_filter" | "error";
-        };
-        /** @enum {string} */
-        ChatArtifactKind: "reader_references";
-        /** @enum {string} */
-        ChatTriggerKind: "reader_references" | "agent_suggestions_ready";
+        /**
+         * @description Structured chat artifact category; clients discover it from persisted resources or events, not assistant text markers.
+         * @enum {string}
+         */
+        ChatArtifactKind: "reader_reference_artifact";
         /** @enum {string} */
         ChatArtifactStatus: "creating" | "ready" | "failed";
-        ChatTrigger: components["schemas"]["ReaderReferencesChatTrigger"] | components["schemas"]["AgentSuggestionsReadyChatTrigger"];
-        ReaderReferencesChatTrigger: {
-            /** @description Exact marker present in `ChatMessage.content`, for example `::ck-trigger{kind="reader_references" artifactId="..."}`. */
-            marker: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            kind: "reader_references";
-            /** @description Present for `reader_references`; fetch with `/chat-artifacts/{artifactId}`. */
-            artifactId: components["schemas"]["Id"];
-        };
-        AgentSuggestionsReadyChatTrigger: {
-            /** @description Exact marker present in `ChatMessage.content`, for example `::ck-trigger{kind="agent_suggestions_ready" chapterId="..." suggestionBatchId="..."}`. */
-            marker: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            kind: "agent_suggestions_ready";
-            /** @description Present for `agent_suggestions_ready`; fetch with `/chapters/{chapterId}/agent-suggestions`. */
-            chapterId: components["schemas"]["Id"];
-            /** @description Present for `agent_suggestions_ready` when the backend created a batch of suggestions for one assistant turn. */
-            suggestionBatchId?: components["schemas"]["Id"];
-            /** @description Specific backend-created suggestions referenced by this trigger. */
-            suggestionIds?: components["schemas"]["Id"][];
-        } | unknown | unknown;
         ReaderReference: {
             id: components["schemas"]["Id"];
             locator: components["schemas"]["ReaderReferenceLocator"];
             label: string;
+            /** @description Bounded reader-reference quote preview; not a full manuscript body. */
             quote: string;
         };
         ChatArtifact: {
@@ -1229,25 +1373,29 @@ export interface components {
             createdAt: components["schemas"]["DateTime"];
             updatedAt?: components["schemas"]["DateTime"] | null;
         };
-        ChatTurn: {
-            userMessage: components["schemas"]["ChatMessage"];
-            assistantMessage: components["schemas"]["ChatMessage"];
-            /** @description Optional initial reader pane location selected by the assistant. */
-            readerTarget?: components["schemas"]["ReaderLocator"] | null;
-        };
         /** @enum {string} */
         AgentSuggestionKind: "punctuation" | "canon_consistency" | "style" | "continuity" | "rewrite";
         /** @enum {string} */
         AgentSuggestionStatus: "pending" | "accepted" | "rejected" | "stale" | "conflict";
         /** @description Draft locator precise enough to render and apply an agent diff hunk. */
-        AgentDiffLocator: components["schemas"]["ReaderLocator"] & {
+        AgentDiffLocator: {
+            projectId: components["schemas"]["Id"];
+            bookId: components["schemas"]["Id"];
+            chapterId: components["schemas"]["Id"];
+            /** @description Text version this locator points to. Public references normally use `published`; draft selections use `draft`. */
+            targetView: components["schemas"]["ChapterContentVariant"];
+            /** @description Chapter revision for stale/conflict-sensitive anchors. */
+            revision: number;
             paragraphId: components["schemas"]["Id"];
             range: components["schemas"]["TextRange"];
+            annotationId?: components["schemas"]["Id"] | null;
         };
         DiffHunk: {
             hunkId: components["schemas"]["Id"];
             range: components["schemas"]["AgentDiffLocator"];
+            /** @description Bounded before text for one proposed hunk; not a full manuscript body. */
             before: string;
+            /** @description Bounded after text for one proposed hunk; not a full manuscript body. */
             after: string;
         };
         AgentSuggestion: {
@@ -1260,10 +1408,10 @@ export interface components {
             baseChapterRevision: number;
             /** @description Suggestion batch created by one assistant turn or backend agent run. */
             batchId: components["schemas"]["Id"];
-            /** @description Assistant message that triggered the backend-created suggestion, when available. */
+            /** @description Assistant message associated with the backend-created suggestion, when available. */
             sourceMessageId?: components["schemas"]["Id"] | null;
             anchorLocator: components["schemas"]["ReaderLocator"];
-            /** @description Selected or surrounding draft text used as visible context for the suggestion card. */
+            /** @description Bounded visible context for the suggestion card; raw prompts and runtime traces are not exposed. */
             contextQuote: string;
             diffs: components["schemas"]["DiffHunk"][];
             status: components["schemas"]["AgentSuggestionStatus"];
@@ -1271,30 +1419,417 @@ export interface components {
             createdAt: components["schemas"]["DateTime"];
             updatedAt?: components["schemas"]["DateTime"] | null;
         };
+        /** @description Cursor-paginated agent suggestions. */
         AgentSuggestionList: {
             data: components["schemas"]["AgentSuggestion"][];
+            meta: components["schemas"]["PageMeta"];
         };
         ApproveAgentSuggestionRequest: {
             /** @description Current chapter revision known by the client before applying the suggestion. */
             expectedChapterRevision: number;
-        };
-        RequestAgentSuggestionRequest: {
-            /** @description Editor instruction describing the requested draft change. */
-            prompt: string;
-            /** @description Chapter revision the editor is working against; backend returns 409 if stale. */
-            expectedChapterRevision: number;
-            /** @description Optional selected draft text the suggestion should target. */
-            selectionQuote?: string | null;
-            anchorLocator?: components["schemas"]["ReaderLocator"] | null;
         };
         AgentSuggestionActionResult: {
             suggestion: components["schemas"]["AgentSuggestion"];
             /** @description Updated chapter after accept; null after reject. */
             chapter: components["schemas"]["Chapter"] | null;
         };
+        ValidationIssue: {
+            /** @description JSON Pointer when applicable. */
+            path: string;
+            message: string;
+            code: string;
+        };
+        CsrfTokenResponse: {
+            /**
+             * @description Opaque token example for docs; never a session secret.
+             * @example ck_csrf_example_token_000000
+             */
+            csrfToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @enum {string} */
+            rotation: "refreshed" | "rotated_after_login" | "rotated_after_logout";
+        };
+        /** @enum {string} */
+        ProjectRole: "owner" | "admin" | "editor" | "viewer";
+        ProjectMembership: {
+            id: string;
+            projectId: string;
+            userId: string;
+            /** Format: email */
+            email?: string;
+            displayName?: string | null;
+            role: components["schemas"]["ProjectRole"];
+            /** @enum {string} */
+            status: "active" | "removed";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectMembershipList: {
+            data: components["schemas"]["ProjectMembership"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        /** @enum {string} */
+        ProjectInvitationStatus: "pending" | "accepted" | "canceled" | "expired";
+        ProjectInvitationProjectContext: {
+            id: components["schemas"]["Id"];
+            /** @description Leak-safe project title shown to the invited user before accepting. */
+            title: string;
+        };
+        ProjectInvitationInviterContext: {
+            displayName: string;
+            /** Format: email */
+            email: string;
+        };
+        ProjectInvitation: {
+            /** @description Opaque invitation id; raw accept token is never returned. */
+            id: string;
+            projectId: string;
+            project: components["schemas"]["ProjectInvitationProjectContext"];
+            inviter: components["schemas"]["ProjectInvitationInviterContext"];
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["ProjectRole"];
+            status: components["schemas"]["ProjectInvitationStatus"];
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            acceptedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectInvitationList: {
+            data: components["schemas"]["ProjectInvitation"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        CreateProjectInvitationRequest: {
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "admin" | "editor" | "viewer";
+        };
+        UpdateProjectMemberRoleRequest: {
+            /** @enum {string} */
+            role: "admin" | "editor" | "viewer";
+        };
+        /** @enum {string} */
+        JobKind: "import" | "indexing" | "export" | "chat_turn" | "agent_run";
+        /** @enum {string} */
+        JobStatus: "queued" | "running" | "canceling" | "succeeded" | "failed" | "canceled" | "expired";
+        Job: {
+            id: string;
+            kind: components["schemas"]["JobKind"];
+            status: components["schemas"]["JobStatus"];
+            progress: number;
+            subject: {
+                type: string;
+                id: string;
+                projectId: string;
+            };
+            result?: components["schemas"]["JobResult"] | null;
+            error?: components["schemas"]["Problem"] | null;
+            canCancel: boolean;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            links: {
+                /** @description Canonical API job resource URL. */
+                self: string;
+                /** @description Canonical API cancel URL when the job can be canceled. */
+                cancel?: string | null;
+                /** @description Short-lived owner/admin-only canonical API result URL; null unless a permitted result link is ready. */
+                result?: string | null;
+            };
+        };
+        JobList: {
+            data: components["schemas"]["Job"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        JobStartResponse: {
+            jobId: string;
+            job: components["schemas"]["Job"];
+            links: {
+                job: string;
+                events?: string | null;
+                poll?: string | null;
+            };
+        };
+        SearchProjectRequest: {
+            query: string;
+            /**
+             * @default all
+             * @enum {string}
+             */
+            scope: "all" | "chapters" | "annotations";
+            filters?: components["schemas"]["SearchProjectFilters"];
+            /** @default 10 */
+            limit: number;
+            cursor?: string | null;
+        };
+        ChatTurnStartRequest: {
+            content: string;
+            /** @default [] */
+            contextLocators: components["schemas"]["ReaderReferenceLocator"][];
+            agentOptions?: components["schemas"]["AgentOptions"];
+        };
+        ChatTurnStartResponse: {
+            turnId: string;
+            jobId: string;
+            /** @enum {string} */
+            status: "queued" | "running";
+            userMessageId: string;
+            assistantMessageId: string | null;
+            links: {
+                job: string;
+                events: string;
+                poll: string;
+            };
+        };
+        ChatTurnSnapshot: {
+            turnId: string;
+            job: components["schemas"]["Job"];
+            /** @enum {string} */
+            status: "queued" | "running" | "completed" | "failed" | "canceled";
+            latestEventId: string | null;
+            messages: components["schemas"]["ChatMessage"][];
+            artifacts: components["schemas"]["ChatArtifact"][];
+            suggestions: components["schemas"]["AgentSuggestion"][];
+            links: {
+                events: string;
+            };
+        };
+        /** @enum {string} */
+        ChatTurnEventType: "job.progress" | "assistant.delta" | "assistant.completed" | "artifact.ready" | "artifact.failed" | "suggestions.ready" | "suggestions.failed" | "turn.completed" | "turn.failed" | "turn.canceled";
+        /** @description Discriminated chat turn SSE payload. Raw prompts, internal runtime traces and manuscript excerpts are not streamed as diagnostics. */
+        ChatTurnEventEnvelope: {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "job.progress";
+            data: {
+                progress: number;
+                label?: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "assistant.delta";
+            data: {
+                text: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "assistant.completed";
+            data: {
+                assistantMessageId: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "artifact.ready";
+            data: {
+                artifactId: string;
+                kind: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "artifact.failed";
+            data: {
+                artifactId: string;
+                code: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "suggestions.ready";
+            data: {
+                batchId: string;
+                suggestionIds?: string[];
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "suggestions.failed";
+            data: {
+                batchId: string;
+                code: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "turn.completed";
+            data: {
+                assistantMessageId: string;
+                /** @enum {string} */
+                finishReason: "stop" | "length" | "resource_limit";
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "turn.failed";
+            data: {
+                code: string;
+            };
+        } | {
+            eventId: string;
+            sequence: number;
+            turnId: string;
+            jobId: string;
+            /** @constant */
+            type: "turn.canceled";
+            data: {
+                reason: string;
+            };
+        };
+        AgentRunRequest: {
+            prompt: string;
+            expectedChapterRevision: number;
+            selectionQuote?: string;
+            targetLocator?: components["schemas"]["ReaderLocator"];
+        };
+        AgentRunStartResponse: {
+            runId: string;
+            jobId: string;
+            job: components["schemas"]["Job"];
+            links: {
+                job: string;
+                suggestions?: string;
+            };
+        };
+        /**
+         * @description Structured backend-owned message reference category. These values are not assistant text markers.
+         * @enum {string}
+         */
+        ChatMessageReferenceKind: "reader_reference_artifact" | "agent_suggestion_batch";
+        ReaderReferencesChatMessageReference: {
+            /**
+             * @description Message reference points to a persisted reader-reference artifact. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "reader_reference_artifact";
+            /** @description Persisted chat artifact id; fetch with `/chat-artifacts/{artifactId}`. */
+            artifactId: components["schemas"]["Id"];
+        };
+        AgentSuggestionsChatMessageReference: {
+            /**
+             * @description Message reference points to backend-created agent suggestions. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "agent_suggestion_batch";
+            /** @description Chapter containing the backend-created suggestions; list with `/chapters/{chapterId}/agent-suggestions`. */
+            chapterId: components["schemas"]["Id"];
+            /** @description Backend-created suggestion batch associated with one assistant turn. */
+            suggestionBatchId?: components["schemas"]["Id"];
+            /** @description Specific backend-created suggestions associated with the assistant turn. */
+            suggestionIds?: components["schemas"]["Id"][];
+        } | unknown | unknown;
+        ChatMessageReference: components["schemas"]["ReaderReferencesChatMessageReference"] | components["schemas"]["AgentSuggestionsChatMessageReference"];
+        JobProgressResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "progress";
+            bookId?: string;
+            stage?: string;
+            stageLabel?: string;
+            currentUnit?: number;
+            totalUnits?: number;
+            unitLabel?: string;
+            sourceFileName?: string;
+            title?: string | null;
+            /** @enum {string} */
+            importMode?: "append" | "new_book";
+            errorMessage?: string;
+        };
+        ExportJobResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "export";
+            bookId: string;
+            /** @enum {string} */
+            format: "epub" | "fb2";
+            /** @description Short-lived owner/admin-only canonical API export download link; null for non-ready or redacted responses. */
+            downloadUrl?: string | null;
+            errorMessage?: string;
+        };
+        ChatTurnJobResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "chat_turn";
+            chatId: string;
+            turnId: string;
+            userMessageId: string;
+            assistantMessageId?: string | null;
+            artifactId?: string | null;
+        };
+        AgentRunJobResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "agent_run";
+            runId: string;
+            suggestionIds: string[];
+            suggestionBatchId: string;
+        };
+        /** @description Bounded job metadata only. Raw manuscript content, runtime traces and unrestricted export payloads are not canonical job result data. */
+        JobResult: components["schemas"]["JobProgressResult"] | components["schemas"]["ExportJobResult"] | components["schemas"]["ChatTurnJobResult"] | components["schemas"]["AgentRunJobResult"];
+        /** @enum {string} */
+        SearchResultKind: "chapter" | "annotation";
+        SearchProjectFilters: {
+            bookId?: components["schemas"]["Id"];
+            chapterId?: components["schemas"]["Id"];
+            resultKinds?: components["schemas"]["SearchResultKind"][];
+            /** Format: date-time */
+            updatedSince?: string;
+        };
+        RejectAgentSuggestionRequest: {
+            /** @description Current chapter revision known by the client before rejecting the suggestion. */
+            expectedChapterRevision: number;
+        };
     };
     responses: {
-        /** @description Invalid request. */
+        /** @description Bad request */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -1303,7 +1838,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Authentication is missing or invalid. */
+        /** @description Authentication required */
         Unauthorized: {
             headers: {
                 [name: string]: unknown;
@@ -1312,7 +1847,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Authenticated user does not have access to the requested project, book, chapter, annotation, chat, job, or suggestion. */
+        /** @description Insufficient project role */
         Forbidden: {
             headers: {
                 [name: string]: unknown;
@@ -1321,7 +1856,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Resource was not found. */
+        /** @description Resource not found */
         NotFound: {
             headers: {
                 [name: string]: unknown;
@@ -1330,7 +1865,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Resource version conflict or invalid state transition. */
+        /** @description Revision, idempotency or state conflict */
         Conflict: {
             headers: {
                 [name: string]: unknown;
@@ -1339,7 +1874,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Uploaded file is too large. */
+        /** @description Upload exceeds configured limit */
         PayloadTooLarge: {
             headers: {
                 [name: string]: unknown;
@@ -1348,7 +1883,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Uploaded file type is not supported. */
+        /** @description Unsupported upload media type */
         UnsupportedMediaType: {
             headers: {
                 [name: string]: unknown;
@@ -1357,19 +1892,71 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description Resource or stream event log expired */
+        Gone: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Validation failed */
+        UnprocessableEntity: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Rate limited */
+        TooManyRequests: {
+            headers: {
+                /** @description Seconds before retrying this operation. */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
     parameters: {
-        ProjectId: components["schemas"]["Id"];
-        BookId: components["schemas"]["Id"];
-        ChapterId: components["schemas"]["Id"];
-        AnnotationId: components["schemas"]["Id"];
-        ChatId: components["schemas"]["Id"];
-        SuggestionId: components["schemas"]["Id"];
-        JobId: components["schemas"]["Id"];
-        ExportJobId: components["schemas"]["Id"];
-        ArtifactId: components["schemas"]["Id"];
+        /** @description Project tenant identifier. */
+        ProjectId: string;
+        /** @description Book identifier. */
+        BookId: string;
+        /** @description Chapter identifier. */
+        ChapterId: string;
+        /** @description Annotation identifier. */
+        AnnotationId: string;
+        /** @description Chat identifier. */
+        ChatId: string;
+        /** @description Agent suggestion identifier. */
+        SuggestionId: string;
+        /** @description Shared job identifier. */
+        JobId: string;
+        /** @description Artifact identifier. */
+        ArtifactId: string;
+        /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
         Cursor: string;
+        /** @description Optional page size. Default 50, maximum 100. */
         Limit: number;
+        /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+        CsrfToken: string;
+        /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+        IdempotencyKey: string;
+        /** @description Native SSE resume cursor. Event ids exclude LF, CR and NUL; sequence is render order, not the resume cursor. */
+        LastEventId: string;
+        /** @description Fallback resume cursor for clients that cannot set Last-Event-ID. */
+        AfterEventId: string;
+        /** @description Chat turn identifier. */
+        TurnId: string;
+        /** @description Project membership identifier. */
+        MemberId: string;
+        /** @description Opaque project invitation identifier. Invitees discover it through verified-email invitation listing; acceptance credential material is never returned or accepted in URLs. */
+        InvitationId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1380,7 +1967,10 @@ export interface operations {
     registerUser: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1393,6 +1983,7 @@ export interface operations {
             /** @description Account created and authenticated. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1400,13 +1991,20 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     loginUser: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1419,6 +2017,7 @@ export interface operations {
             /** @description Authenticated session. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1427,12 +2026,19 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     logoutUser: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1441,38 +2047,25 @@ export interface operations {
             /** @description Session invalidated. */
             204: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
-        };
-    };
-    getCurrentUser: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Current user. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["User"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listProjects: {
         parameters: {
             query?: {
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
                 cursor?: components["parameters"]["Cursor"];
+                /** @description Optional page size. Default 50, maximum 100. */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
@@ -1484,20 +2077,28 @@ export interface operations {
             /** @description Project list. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1510,6 +2111,7 @@ export interface operations {
             /** @description Created project. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1519,6 +2121,9 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getProject: {
@@ -1526,6 +2131,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -1535,22 +2141,30 @@ export interface operations {
             /** @description Project detail. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Project"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -1564,16 +2178,23 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateProject: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -1587,6 +2208,7 @@ export interface operations {
             /** @description Updated project. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1597,16 +2219,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listBooks: {
         parameters: {
             query?: {
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
                 cursor?: components["parameters"]["Cursor"];
+                /** @description Optional page size. Default 50, maximum 100. */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -1616,22 +2243,30 @@ export interface operations {
             /** @description Book list. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["BookList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createBook: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -1645,6 +2280,7 @@ export interface operations {
             /** @description Created book. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1655,6 +2291,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getBook: {
@@ -1662,6 +2300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1671,22 +2310,30 @@ export interface operations {
             /** @description Book detail. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Book"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteBook: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1700,16 +2347,23 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateBook: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1723,6 +2377,7 @@ export interface operations {
             /** @description Updated book. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1733,6 +2388,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getImportConstraints: {
@@ -1740,125 +2397,21 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Import constraints for frontend validation. */
+            /** @description Upload constraints accepted by the backend. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ImportConstraints"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    importBookFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                projectId: components["parameters"]["ProjectId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["ImportBookRequest"];
-            };
-        };
-        responses: {
-            /** @description Import accepted. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexingJob"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            413: components["responses"]["PayloadTooLarge"];
-            415: components["responses"]["UnsupportedMediaType"];
-        };
-    };
-    listIndexingJobs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                projectId: components["parameters"]["ProjectId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Indexing jobs. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexingJobList"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getIndexingJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Indexing job. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexingJob"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    cancelIndexingJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                jobId: components["parameters"]["JobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Canceled indexing job. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IndexingJob"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -1866,13 +2419,66 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    importBookFile: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description Multipart request body. */
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportBookRequest"];
+            };
+        };
+        responses: {
+            /** @description Import job accepted. */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    Location?: string;
+                    /** @description Seconds before retrying this operation. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStartResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["UnprocessableEntity"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createBookExport: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1883,51 +2489,38 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Export job created. */
+            /** @description Export job accepted. */
             202: {
                 headers: {
+                    "Cache-Control"?: "no-store";
+                    Location?: string;
+                    /** @description Seconds before retrying this operation. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExportJob"];
+                    "application/json": components["schemas"]["JobStartResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    getExportJob: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                exportJobId: components["parameters"]["ExportJobId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Export job. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExportJob"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listChapters: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1937,22 +2530,30 @@ export interface operations {
             /** @description Chapter list. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChapterList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createChapter: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Book identifier. */
                 bookId: components["parameters"]["BookId"];
             };
             cookie?: never;
@@ -1966,6 +2567,7 @@ export interface operations {
             /** @description Created chapter. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -1976,16 +2578,19 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getChapter: {
         parameters: {
             query?: {
-                /** @description Select reading or draft payload without changing the chapter lifecycle state. */
-                viewMode?: components["schemas"]["ChapterViewMode"];
+                /** @description Select published or draft chapter content without changing the chapter lifecycle state. */
+                contentVariant?: components["schemas"]["ChapterContentVariant"];
             };
             header?: never;
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -1995,22 +2600,30 @@ export interface operations {
             /** @description Chapter content. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Chapter"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteChapter: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2024,16 +2637,23 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateChapter: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2047,6 +2667,7 @@ export interface operations {
             /** @description Updated chapter. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2058,13 +2679,18 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     publishChapter: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2078,6 +2704,7 @@ export interface operations {
             /** @description Published chapter. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2089,13 +2716,20 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listChapterAnnotations: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
             header?: never;
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2105,22 +2739,30 @@ export interface operations {
             /** @description Reader annotations for chapter. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ReaderAnnotationList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createChapterAnnotation: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2134,6 +2776,7 @@ export interface operations {
             /** @description Created reader annotation. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2144,13 +2787,19 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteReaderAnnotation: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Annotation identifier. */
                 annotationId: components["parameters"]["AnnotationId"];
             };
             cookie?: never;
@@ -2164,16 +2813,23 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateReaderAnnotation: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Annotation identifier. */
                 annotationId: components["parameters"]["AnnotationId"];
             };
             cookie?: never;
@@ -2187,6 +2843,7 @@ export interface operations {
             /** @description Updated reader annotation. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2197,26 +2854,34 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     searchProject: {
         parameters: {
-            query: {
-                q: string;
-                scope?: components["schemas"]["SearchScope"];
-                limit?: components["parameters"]["Limit"];
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
             };
-            header?: never;
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
         };
-        requestBody?: never;
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchProjectRequest"];
+            };
+        };
         responses: {
-            /** @description Search results with reader locators. */
+            /** @description Search results. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2227,16 +2892,20 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listChatSessions: {
         parameters: {
             query?: {
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
                 cursor?: components["parameters"]["Cursor"];
+                /** @description Optional page size. Default 50, maximum 100. */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -2246,22 +2915,30 @@ export interface operations {
             /** @description Chat sessions. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChatSessionList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createChatSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Project tenant identifier. */
                 projectId: components["parameters"]["ProjectId"];
             };
             cookie?: never;
@@ -2275,6 +2952,7 @@ export interface operations {
             /** @description Created chat session. */
             201: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2285,6 +2963,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getChatSession: {
@@ -2292,6 +2972,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Chat identifier. */
                 chatId: components["parameters"]["ChatId"];
             };
             cookie?: never;
@@ -2301,22 +2982,30 @@ export interface operations {
             /** @description Chat session. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChatSession"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteChatSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chat identifier. */
                 chatId: components["parameters"]["ChatId"];
             };
             cookie?: never;
@@ -2330,16 +3019,23 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     renameChatSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Chat identifier. */
                 chatId: components["parameters"]["ChatId"];
             };
             cookie?: never;
@@ -2353,6 +3049,7 @@ export interface operations {
             /** @description Updated chat session. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2363,16 +3060,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listChatMessages: {
         parameters: {
             query?: {
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
                 cursor?: components["parameters"]["Cursor"];
+                /** @description Optional page size. Default 50, maximum 100. */
                 limit?: components["parameters"]["Limit"];
             };
             header?: never;
             path: {
+                /** @description Chat identifier. */
                 chatId: components["parameters"]["ChatId"];
             };
             cookie?: never;
@@ -2382,48 +3084,11 @@ export interface operations {
             /** @description Chat messages. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChatMessageList"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    sendChatMessage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                chatId: components["parameters"]["ChatId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateChatMessageRequest"];
-            };
-        };
-        responses: {
-            /** @description OpenAI-style streaming response. The assistant may include trigger markers in ordinary text, for example `::ck-trigger{kind="reader_references" artifactId="..."}` or `::ck-trigger{kind="agent_suggestions_ready" chapterId="..."}`. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": string;
-                };
-            };
-            /** @description Completed chat turn. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChatTurn"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -2431,6 +3096,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getChatArtifact: {
@@ -2438,6 +3104,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Artifact identifier. */
                 artifactId: components["parameters"]["ArtifactId"];
             };
             cookie?: never;
@@ -2447,15 +3114,19 @@ export interface operations {
             /** @description Chat artifact. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ChatArtifact"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listAgentSuggestions: {
@@ -2463,11 +3134,16 @@ export interface operations {
             query?: {
                 status?: components["schemas"]["AgentSuggestionStatus"];
                 sourceMessageId?: components["schemas"]["Id"];
-                /** @description Use with `agent_suggestions_ready` trigger to fetch only suggestions created by that assistant turn. */
+                /** @description Filter to suggestions created in the specified backend suggestion batch. */
                 batchId?: components["schemas"]["Id"];
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
             };
             header?: never;
             path: {
+                /** @description Chapter identifier. */
                 chapterId: components["parameters"]["ChapterId"];
             };
             cookie?: never;
@@ -2477,35 +3153,37 @@ export interface operations {
             /** @description Agent suggestions. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AgentSuggestionList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
-    requestAgentSuggestion: {
+    getAgentSuggestion: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                chapterId: components["parameters"]["ChapterId"];
+                /** @description Agent suggestion identifier. */
+                suggestionId: components["parameters"]["SuggestionId"];
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RequestAgentSuggestionRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Agent suggestion created. */
-            201: {
+            /** @description Agent suggestion. */
+            200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2517,38 +3195,18 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
-        };
-    };
-    getAgentSuggestion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestionId: components["parameters"]["SuggestionId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Agent suggestion. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentSuggestion"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     approveAgentSuggestion: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Agent suggestion identifier. */
                 suggestionId: components["parameters"]["SuggestionId"];
             };
             cookie?: never;
@@ -2562,6 +3220,7 @@ export interface operations {
             /** @description Approved suggestion result. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2573,32 +3232,703 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     rejectAgentSuggestion: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
             path: {
+                /** @description Agent suggestion identifier. */
                 suggestionId: components["parameters"]["SuggestionId"];
             };
             cookie?: never;
         };
-        requestBody?: never;
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectAgentSuggestionRequest"];
+            };
+        };
         responses: {
             /** @description Rejected suggestion result. */
             200: {
                 headers: {
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AgentSuggestionActionResult"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCurrentUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sanitized current user/session metadata. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCsrfToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSRF token bootstrap. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsrfTokenResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    rotateSession: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rotated session. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listProjectMembers: {
+        parameters: {
+            query?: {
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project members. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMembershipList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeProjectMember: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+                /** @description Project membership identifier. */
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member removed. */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateProjectMemberRole: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+                /** @description Project membership identifier. */
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated membership. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMembership"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listProjectInvitations: {
+        parameters: {
+            query?: {
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project invitations. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitationList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createProjectInvitation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Invitation created. */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelProjectInvitation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Opaque project invitation identifier. Invitees discover it through verified-email invitation listing; acceptance credential material is never returned or accepted in URLs. */
+                invitationId: components["parameters"]["InvitationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation canceled. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptProjectInvitation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Opaque project invitation identifier. Invitees discover it through verified-email invitation listing; acceptance credential material is never returned or accepted in URLs. */
+                invitationId: components["parameters"]["InvitationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitation accepted. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMembership"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listProjectJobs: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["JobKind"];
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project jobs. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startProjectIndexing: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Project tenant identifier. */
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @default changed_content
+                     * @enum {string}
+                     */
+                    scope?: "project" | "changed_content";
+                };
+            };
+        };
+        responses: {
+            /** @description Indexing job accepted. */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    Location?: string;
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStartResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Shared job identifier. */
+                jobId: components["parameters"]["JobId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job state. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelJob: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Shared job identifier. */
+                jobId: components["parameters"]["JobId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current job after cancel request. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createChatTurn: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Chat identifier. */
+                chatId: components["parameters"]["ChatId"];
+            };
+            cookie?: never;
+        };
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatTurnStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Chat turn accepted. */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    Location?: string;
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatTurnStartResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getChatTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Chat turn identifier. */
+                turnId: components["parameters"]["TurnId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Chat turn snapshot. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatTurnSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    streamChatTurnEvents: {
+        parameters: {
+            query?: {
+                /** @description Fallback resume cursor for clients that cannot set Last-Event-ID. */
+                afterEventId?: components["parameters"]["AfterEventId"];
+            };
+            header?: {
+                /** @description Native SSE resume cursor. Event ids exclude LF, CR and NUL; sequence is render order, not the resume cursor. */
+                "Last-Event-ID"?: components["parameters"]["LastEventId"];
+            };
+            path: {
+                /** @description Chat turn identifier. */
+                turnId: components["parameters"]["TurnId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Chat turn event stream. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            410: components["responses"]["Gone"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startAgentRun: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Scoped by principal + method + path + request fingerprint. Duplicate same-payload replay returns the original/current result; same-key mismatched payload returns 409 Problem. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque CSRF token from GET /auth/csrf. Examples never contain real token values. */
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                /** @description Chapter identifier. */
+                chapterId: components["parameters"]["ChapterId"];
+            };
+            cookie?: never;
+        };
+        /** @description Request body. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Agent run accepted. */
+            202: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    Location?: string;
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRunStartResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listMyProjectInvitations: {
+        parameters: {
+            query?: {
+                /** @description Optional page size. Default 50, maximum 100. */
+                limit?: components["parameters"]["Limit"];
+                /** @description Opaque cursor returned as PageMeta.nextCursor; invalid or mismatched cursors return 400 Problem. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invitations addressed to current user email. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectInvitationList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
 }

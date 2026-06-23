@@ -78,6 +78,9 @@ export function logoutMutationOptions(api: SessionLogoutClient) {
 export function classifyAuthFailure(error: unknown, fallback: string): AuthFailure {
   if (error instanceof ApiStatusError) {
     if (error.status === 401) {
+      if (error.problem.code === 'auth_failed') {
+        return { kind: 'unauthorized', message: 'Неверный email или пароль.' };
+      }
       return { kind: 'unauthorized', message: 'Сессия истекла. Войдите снова, и мы вернем вас к рабочему месту.' };
     }
     if (error.status === 403) {

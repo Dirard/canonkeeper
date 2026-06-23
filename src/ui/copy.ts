@@ -12,12 +12,8 @@ export const unavailableSectionCopy = 'Раздел пока недоступе�
 /** Human-readable label for a search result, keyed by its `kind`. */
 export function searchResultKindLabel(kind: string): string {
   switch (kind) {
-    case 'material':
-      return 'Материал · открывается в читалке';
     case 'annotation':
       return 'Заметка · локатор';
-    case 'canon_fact':
-      return 'Канон · локатор';
     default:
       return 'Глава · локатор';
   }

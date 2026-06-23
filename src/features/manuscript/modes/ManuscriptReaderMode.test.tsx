@@ -163,7 +163,7 @@ describe('ManuscriptReaderMode', () => {
 
   it('shows reader loading, empty, 401, 500 and network states without route scenarios', async () => {
     const emptyView = renderReader('', (api) => {
-      vi.spyOn(api, 'listChapters').mockResolvedValueOnce({ data: [] });
+      vi.spyOn(api, 'listChapters').mockResolvedValueOnce({ data: [], meta: { hasMore: false, nextCursor: null } });
     });
     expect(await screen.findByText('В проекте пока нет доступных глав для чтения.')).toBeTruthy();
     emptyView.unmount();
@@ -253,9 +253,9 @@ describe('ManuscriptReaderMode', () => {
     expect(screen.queryByRole('button', { name: 'Агент' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Глобальный поиск' }));
-    fireEvent.change(screen.getByLabelText('Запрос поиска'), { target: { value: 'Карта' } });
+    fireEvent.change(screen.getByLabelText('Запрос поиска'), { target: { value: 'Белый порт' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Карта приливов/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Белый порт/ }));
 
     expect(navigate).toHaveBeenCalledWith(
       '/manuscript/books',

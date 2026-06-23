@@ -14,6 +14,7 @@ export interface ProjectSidebarProps {
   active: WorkspaceArea;
   activeChatId: string;
   chatNotice?: string;
+  canCreateChat?: boolean;
   onChat: () => void;
   onCreateChat: () => void;
   onManuscript: () => void;
@@ -36,6 +37,7 @@ export function ProjectSidebar({
   active,
   activeChatId,
   chatNotice,
+  canCreateChat = true,
   onChat,
   onCreateChat,
   onManuscript,
@@ -60,7 +62,7 @@ export function ProjectSidebar({
       <section className={styles.chats} aria-label="Чаты проекта">
         <div className={styles.sessionHeader}>
           <p className={styles.chatsTitle}>Чаты проекта</p>
-          <button aria-label="Новый чат" className={styles.iconButton} onClick={onCreateChat} type="button">
+          <button aria-label="Новый чат" className={styles.iconButton} disabled={!canCreateChat} onClick={onCreateChat} type="button">
             <Plus aria-hidden="true" size={18} />
           </button>
         </div>

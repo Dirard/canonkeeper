@@ -1,5 +1,5 @@
 {
-  "version": "2.13",
+  "version": "2.14",
   "children": [
     {
       "type": "frame",
@@ -8816,7 +8816,7 @@
       "theme": {
         "Mode": "Light"
       },
-      "width": 6520,
+      "width": 9900,
       "height": 3990,
       "fill": "#EAEAE7",
       "cornerRadius": 20,
@@ -12853,6 +12853,1015 @@
                   "fontWeight": "normal"
                 }
               ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "T9wdTB",
+          "x": 6565,
+          "y": 230,
+          "name": "Desktop · Ответ формируется (стоп)",
+          "theme": {
+            "Mode": "Light"
+          },
+          "clip": true,
+          "width": 1440,
+          "height": 900,
+          "fill": "$--background",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "nOb7b",
+              "type": "ref",
+              "ref": "CKGYy",
+              "width": "fill_container",
+              "height": 64,
+              "descendants": {
+                "HSMTx": {
+                  "type": "frame",
+                  "id": "Va28A",
+                  "name": "Center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "K7BoSA",
+                      "type": "ref",
+                      "ref": "pxNiJ",
+                      "name": "Search",
+                      "width": 420
+                    }
+                  ]
+                },
+                "jOR61": {
+                  "type": "frame",
+                  "id": "zuXuv",
+                  "name": "Right",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "v8Smi",
+                      "type": "ref",
+                      "ref": "o2cdi",
+                      "name": "Cabinet",
+                      "descendants": {
+                        "XQJ5h": {
+                          "icon": "layout-dashboard"
+                        },
+                        "wPhxN": {
+                          "content": "Личный кабинет"
+                        }
+                      }
+                    },
+                    {
+                      "id": "usVfN",
+                      "type": "ref",
+                      "ref": "wXrwO",
+                      "name": "Avatar"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "q4s2Tm",
+              "name": "Body",
+              "width": "fill_container",
+              "height": "fill_container",
+              "children": [
+                {
+                  "id": "g1zIIV",
+                  "type": "ref",
+                  "ref": "Frs5F",
+                  "name": "Sidebar",
+                  "height": "fill_container"
+                },
+                {
+                  "type": "frame",
+                  "id": "zHZCB",
+                  "name": "Chat Column",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$--card",
+                  "stroke": "$--border",
+                  "strokeWidth": {
+                    "right": 1
+                  },
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "IJ5ew",
+                      "type": "ref",
+                      "ref": "ByUM9",
+                      "width": "fill_container",
+                      "descendants": {
+                        "p75Yz": {
+                          "content": "Пожар в Белом порту"
+                        },
+                        "uA6Eb": {
+                          "type": "frame",
+                          "id": "uAVNT",
+                          "name": "Actions",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "K39j4T",
+                              "type": "ref",
+                              "ref": "hpBai",
+                              "name": "Rename",
+                              "descendants": {
+                                "o4M3Ot": {
+                                  "icon": "pencil"
+                                }
+                              }
+                            },
+                            {
+                              "id": "sjA3h",
+                              "type": "ref",
+                              "ref": "hpBai",
+                              "name": "Delete",
+                              "descendants": {
+                                "o4M3Ot": {
+                                  "icon": "trash-2",
+                                  "fill": "$--destructive"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UuWJe",
+                      "name": "Thread",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 18,
+                      "padding": [
+                        22,
+                        28
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "dwh4V",
+                          "name": "Thread Column",
+                          "width": 600,
+                          "layout": "vertical",
+                          "gap": 18,
+                          "children": [
+                            {
+                              "id": "pZst9",
+                              "type": "ref",
+                              "ref": "K5Ahz",
+                              "name": "User Msg",
+                              "width": "fill_container",
+                              "descendants": {
+                                "Nz30i": {
+                                  "content": "Кто первым заметил пожар в Белом порту?"
+                                }
+                              }
+                            },
+                            {
+                              "type": "frame",
+                              "id": "omLaD",
+                              "name": "Agent Response · Streaming",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8,
+                              "children": [
+                                {
+                                  "id": "NrZ2x",
+                                  "type": "ref",
+                                  "ref": "GNdOx",
+                                  "name": "Thought",
+                                  "descendants": {
+                                    "zQVRN": {
+                                      "content": "Думаю…"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "c5lKyI",
+                                  "type": "ref",
+                                  "ref": "uxIao",
+                                  "name": "Reasoning",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "JbQAu": {
+                                      "content": "Сначала найду самое раннее упоминание пожара в Белом порту."
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "FHWJs",
+                                  "type": "ref",
+                                  "ref": "HFGy2",
+                                  "name": "Tool Search",
+                                  "descendants": {
+                                    "Z4tiFv": {
+                                      "content": "Поиск по корпусу · «пожар в Белом порту» · 18 совпадений"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "t1P0X",
+                                  "name": "Generating",
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 8,
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "N4NcG",
+                                      "name": "Status",
+                                      "gap": 8,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "ellipse",
+                                          "id": "reHyB",
+                                          "name": "Pulse",
+                                          "fill": "$--primary",
+                                          "width": 8,
+                                          "height": 8
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "TLtSP",
+                                          "name": "Meta",
+                                          "fill": "$--muted-foreground",
+                                          "content": "Ответ формируется",
+                                          "fontFamily": "$--font-mono",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal",
+                                          "letterSpacing": 1
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "fvzBE",
+                                      "name": "Partial",
+                                      "fill": "$--foreground-strong",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "По ранней записи первой дым заметила Мара с северной пристани ▍",
+                                      "lineHeight": 1.5,
+                                      "fontFamily": "$--font-sans",
+                                      "fontSize": 15,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "aeRzy",
+                      "type": "ref",
+                      "ref": "r7ynIg",
+                      "width": "fill_container",
+                      "descendants": {
+                        "BTN16": {
+                          "width": 600
+                        },
+                        "BTN16/CXt2M": {
+                          "icon": "square"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IWgs7",
+                  "x": 980,
+                  "y": 0,
+                  "name": "Reader Pane",
+                  "enabled": false,
+                  "width": 480,
+                  "height": "fill_container(836)",
+                  "fill": "$--reader-pane",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "B2sR2G",
+                      "type": "ref",
+                      "ref": "gHGJu",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EdLNx",
+                      "name": "Reader Body",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        24,
+                        32
+                      ],
+                      "children": [
+                        {
+                          "id": "npFqg",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 1",
+                          "width": "fill_container"
+                        },
+                        {
+                          "id": "pnDM9",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 2",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Wqhxa": {
+                              "content": "Позже на допросе Лютов записал всё коротко, будто боялся оставить в протоколе слишком много воздуха."
+                            }
+                          }
+                        },
+                        {
+                          "id": "Bf5gv",
+                          "type": "ref",
+                          "ref": "EowJO",
+                          "name": "Highlight",
+                          "width": "fill_container"
+                        },
+                        {
+                          "id": "n7DlKM",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 3",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Wqhxa": {
+                              "content": "Лютов не отрицал дыма, но перенёс первенство на Саву."
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "p41QB",
+              "type": "ref",
+              "ref": "vMrkS",
+              "name": "Scrollbar",
+              "layoutPosition": "absolute",
+              "x": 1430,
+              "y": 140,
+              "height": 340
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "qcCqk",
+          "x": 8205,
+          "y": 230,
+          "name": "Desktop · Ответ не завершён",
+          "theme": {
+            "Mode": "Light"
+          },
+          "clip": true,
+          "width": 1440,
+          "height": 900,
+          "fill": "$--background",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "KJm1G",
+              "type": "ref",
+              "ref": "CKGYy",
+              "width": "fill_container",
+              "height": 64,
+              "descendants": {
+                "HSMTx": {
+                  "type": "frame",
+                  "id": "e1jsT",
+                  "name": "Center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "GXQIA",
+                      "type": "ref",
+                      "ref": "pxNiJ",
+                      "name": "Search",
+                      "width": 420
+                    }
+                  ]
+                },
+                "jOR61": {
+                  "type": "frame",
+                  "id": "B0fI1H",
+                  "name": "Right",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "N8G0H",
+                      "type": "ref",
+                      "ref": "o2cdi",
+                      "name": "Cabinet",
+                      "descendants": {
+                        "XQJ5h": {
+                          "icon": "layout-dashboard"
+                        },
+                        "wPhxN": {
+                          "content": "Личный кабинет"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Z4Y1o",
+                      "type": "ref",
+                      "ref": "wXrwO",
+                      "name": "Avatar"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "wU3uf",
+              "name": "Body",
+              "width": "fill_container",
+              "height": "fill_container",
+              "children": [
+                {
+                  "id": "BpAoh",
+                  "type": "ref",
+                  "ref": "Frs5F",
+                  "name": "Sidebar",
+                  "height": "fill_container"
+                },
+                {
+                  "type": "frame",
+                  "id": "wmtu6",
+                  "name": "Chat Column",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "$--card",
+                  "stroke": "$--border",
+                  "strokeWidth": {
+                    "right": 1
+                  },
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "BgaNK",
+                      "type": "ref",
+                      "ref": "ByUM9",
+                      "width": "fill_container",
+                      "descendants": {
+                        "p75Yz": {
+                          "content": "Пожар в Белом порту"
+                        },
+                        "uA6Eb": {
+                          "type": "frame",
+                          "id": "LR4N3",
+                          "name": "Actions",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "qUTSo",
+                              "type": "ref",
+                              "ref": "hpBai",
+                              "name": "Rename",
+                              "descendants": {
+                                "o4M3Ot": {
+                                  "icon": "pencil"
+                                }
+                              }
+                            },
+                            {
+                              "id": "i4FtH4",
+                              "type": "ref",
+                              "ref": "hpBai",
+                              "name": "Delete",
+                              "descendants": {
+                                "o4M3Ot": {
+                                  "icon": "trash-2",
+                                  "fill": "$--destructive"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MOCuV",
+                      "name": "Thread",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 18,
+                      "padding": [
+                        22,
+                        28
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "J4QDL",
+                          "name": "Thread Column",
+                          "width": 600,
+                          "layout": "vertical",
+                          "gap": 18,
+                          "children": [
+                            {
+                              "id": "wzv64",
+                              "type": "ref",
+                              "ref": "K5Ahz",
+                              "name": "User Msg",
+                              "width": "fill_container",
+                              "descendants": {
+                                "Nz30i": {
+                                  "content": "Кто первым заметил пожар в Белом порту?"
+                                }
+                              }
+                            },
+                            {
+                              "type": "frame",
+                              "id": "z0GAR",
+                              "name": "Agent Response · Interrupted",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8,
+                              "children": [
+                                {
+                                  "id": "h7vtV",
+                                  "type": "ref",
+                                  "ref": "GNdOx",
+                                  "name": "Thought",
+                                  "descendants": {
+                                    "zQVRN": {
+                                      "content": "Думал 4 сек"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "DjrJI",
+                                  "type": "ref",
+                                  "ref": "uxIao",
+                                  "name": "Reasoning",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "JbQAu": {
+                                      "content": "Сначала найду самое раннее упоминание пожара в Белом порту."
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "e44uSg",
+                                  "type": "ref",
+                                  "ref": "HFGy2",
+                                  "name": "Tool Search",
+                                  "descendants": {
+                                    "Z4tiFv": {
+                                      "content": "Поиск по корпусу · «пожар в Белом порту» · 18 совпадений"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "v2LcmK",
+                                  "name": "Partial",
+                                  "fill": "$--muted-foreground",
+                                  "textGrowth": "fixed-width",
+                                  "width": "fill_container",
+                                  "content": "По ранней записи первой дым заметила Мара с северной",
+                                  "lineHeight": 1.5,
+                                  "fontFamily": "$--font-sans",
+                                  "fontSize": 15,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "f0Zyvm",
+                                  "name": "Status",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "ONEgn",
+                                      "name": "Icon",
+                                      "width": 16,
+                                      "height": 16,
+                                      "icon": "triangle-alert",
+                                      "library": "lucide",
+                                      "fill": "$--destructive"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "O2v2bO",
+                                      "name": "Meta",
+                                      "fill": "$--destructive",
+                                      "content": "Ответ не завершён",
+                                      "fontFamily": "$--font-sans",
+                                      "fontSize": 13,
+                                      "fontWeight": "500"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "ra3hN",
+                      "type": "ref",
+                      "ref": "r7ynIg",
+                      "width": "fill_container",
+                      "descendants": {
+                        "BTN16": {
+                          "width": 600
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H2yPX",
+                  "x": 980,
+                  "y": 0,
+                  "name": "Reader Pane",
+                  "enabled": false,
+                  "width": 480,
+                  "height": "fill_container(836)",
+                  "fill": "$--reader-pane",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "NS4S6",
+                      "type": "ref",
+                      "ref": "gHGJu",
+                      "width": "fill_container"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "T2HdAw",
+                      "name": "Reader Body",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": [
+                        24,
+                        32
+                      ],
+                      "children": [
+                        {
+                          "id": "xNRFp",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 1",
+                          "width": "fill_container"
+                        },
+                        {
+                          "id": "nBwQL",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 2",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Wqhxa": {
+                              "content": "Позже на допросе Лютов записал всё коротко, будто боялся оставить в протоколе слишком много воздуха."
+                            }
+                          }
+                        },
+                        {
+                          "id": "z883lp",
+                          "type": "ref",
+                          "ref": "EowJO",
+                          "name": "Highlight",
+                          "width": "fill_container"
+                        },
+                        {
+                          "id": "MbzLm",
+                          "type": "ref",
+                          "ref": "iRsyY",
+                          "name": "Para 3",
+                          "width": "fill_container",
+                          "descendants": {
+                            "Wqhxa": {
+                              "content": "Лютов не отрицал дыма, но перенёс первенство на Саву."
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "Y4AOhS",
+                  "type": "ref",
+                  "ref": "NSLlF",
+                  "name": "Error Toast",
+                  "layoutPosition": "absolute",
+                  "x": 1000,
+                  "y": 88,
+                  "width": 380,
+                  "descendants": {
+                    "CCb5D": {
+                      "icon": "triangle-alert",
+                      "fill": "$--destructive"
+                    },
+                    "c3k1Sp": {
+                      "content": "Не удалось завершить ответ"
+                    },
+                    "EKN5O": {
+                      "content": "Соединение прервалось. Отправьте запрос ещё раз."
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "id": "jogfb",
+              "type": "ref",
+              "ref": "vMrkS",
+              "name": "Scrollbar",
+              "layoutPosition": "absolute",
+              "x": 1430,
+              "y": 140,
+              "height": 340
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Hr3Wt",
+          "x": 2460,
+          "y": 2767,
+          "name": "Mobile · Ответ формируется (стоп)",
+          "theme": {
+            "Mode": "Light"
+          },
+          "clip": true,
+          "width": 390,
+          "height": 844,
+          "fill": "$--card",
+          "layout": "vertical",
+          "children": [
+            {
+              "id": "PVJoa",
+              "type": "ref",
+              "ref": "CKGYy",
+              "width": "fill_container",
+              "height": 52,
+              "padding": [
+                0,
+                10
+              ],
+              "descendants": {
+                "HbnVi": {
+                  "type": "frame",
+                  "id": "v9Q2LY",
+                  "name": "Left",
+                  "fill": "#00000000",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ryDxh",
+                      "name": "Menu",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#00000000",
+                      "cornerRadius": "$--radius-sm",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "i1IhKb",
+                          "name": "Icon",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "menu",
+                          "library": "lucide",
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "f3UyAZ",
+                      "name": "Title",
+                      "fill": "$--foreground",
+                      "content": "Пожар в Белом порту",
+                      "fontFamily": "$--font-sans",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                "jOR61": {
+                  "type": "frame",
+                  "id": "suMs2",
+                  "name": "Right",
+                  "fill": "#00000000",
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "DYpcn",
+                      "name": "More",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#00000000",
+                      "cornerRadius": "$--radius-sm",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "b1Grzs",
+                          "name": "Icon",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "ellipsis-vertical",
+                          "library": "lucide",
+                          "fill": "$--foreground"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "DA5PB",
+                      "type": "ref",
+                      "ref": "wXrwO",
+                      "name": "Avatar"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "peXqH",
+              "name": "Thread",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "padding": 16,
+              "children": [
+                {
+                  "id": "Khxtn",
+                  "type": "ref",
+                  "ref": "K5Ahz",
+                  "name": "User",
+                  "width": "fill_container"
+                },
+                {
+                  "type": "frame",
+                  "id": "RU1Kg",
+                  "name": "Agent · Streaming",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "id": "D97wv",
+                      "type": "ref",
+                      "ref": "GNdOx",
+                      "name": "Thought",
+                      "descendants": {
+                        "zQVRN": {
+                          "content": "Думаю…"
+                        }
+                      }
+                    },
+                    {
+                      "id": "g941N6",
+                      "type": "ref",
+                      "ref": "uxIao",
+                      "name": "Reasoning",
+                      "width": "fill_container",
+                      "descendants": {
+                        "JbQAu": {
+                          "content": "Найду самое раннее упоминание пожара в Белом порту."
+                        }
+                      }
+                    },
+                    {
+                      "id": "zvhz0",
+                      "type": "ref",
+                      "ref": "HFGy2",
+                      "name": "Tool Search",
+                      "descendants": {
+                        "Z4tiFv": {
+                          "content": "Поиск по корпусу · 18"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lm1m4",
+                      "name": "Generating",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "LzWXZ",
+                          "name": "Status",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "MOUxI",
+                              "name": "Pulse",
+                              "fill": "$--primary",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "aV1BX",
+                              "name": "Meta",
+                              "fill": "$--muted-foreground",
+                              "content": "Ответ формируется",
+                              "fontFamily": "$--font-mono",
+                              "fontSize": 12,
+                              "fontWeight": "normal",
+                              "letterSpacing": 1
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "rZ5vC",
+                          "name": "Partial",
+                          "fill": "$--foreground-strong",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "По ранней записи первой дым заметила Мара с северной пристани ▍",
+                          "lineHeight": 1.5,
+                          "fontFamily": "$--font-sans",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "w5G9dl",
+              "type": "ref",
+              "ref": "r7ynIg",
+              "width": "fill_container",
+              "padding": 12,
+              "descendants": {
+                "BTN16": {
+                  "width": "fill_container"
+                },
+                "BTN16/CXt2M": {
+                  "icon": "square"
+                }
+              }
+            },
+            {
+              "id": "G9XUs",
+              "type": "ref",
+              "ref": "vMrkS",
+              "name": "Scrollbar",
+              "layoutPosition": "absolute",
+              "x": 378,
+              "y": 74,
+              "height": 560
             }
           ]
         }
@@ -20598,6 +21607,872 @@
                       "height": 300
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "dXqb3",
+                  "name": "Reader · Агент (готовит предложение)",
+                  "theme": {
+                    "Mode": "Light"
+                  },
+                  "clip": true,
+                  "width": 1440,
+                  "height": 900,
+                  "fill": "$--background",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "VylIr",
+                      "type": "ref",
+                      "ref": "CKGYy",
+                      "name": "Top Bar",
+                      "width": "fill_container",
+                      "height": 64,
+                      "descendants": {
+                        "HSMTx": {
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "id": "u1W4t",
+                              "type": "ref",
+                              "ref": "pxNiJ",
+                              "name": "Search",
+                              "width": 420
+                            }
+                          ]
+                        },
+                        "jOR61": {
+                          "alignItems": "center",
+                          "gap": 12,
+                          "children": [
+                            {
+                              "id": "hyVwy",
+                              "type": "ref",
+                              "ref": "o2cdi",
+                              "name": "Cabinet",
+                              "descendants": {
+                                "XQJ5h": {
+                                  "icon": "layout-dashboard"
+                                },
+                                "wPhxN": {
+                                  "content": "Личный кабинет"
+                                }
+                              }
+                            },
+                            {
+                              "id": "i2rAIa",
+                              "type": "ref",
+                              "ref": "wXrwO",
+                              "name": "Avatar"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E3cY1F",
+                      "name": "Body",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "children": [
+                        {
+                          "id": "s7ru9S",
+                          "type": "ref",
+                          "ref": "Frs5F",
+                          "name": "Sidebar",
+                          "height": "fill_container",
+                          "descendants": {
+                            "wgRaP": {
+                              "fill": "$--sidebar-accent"
+                            },
+                            "wgRaP/GxI3i": {
+                              "fill": "$--foreground"
+                            },
+                            "wgRaP/vRFK8": {
+                              "fill": "$--foreground"
+                            },
+                            "zZQai": {
+                              "fill": "#00000000"
+                            },
+                            "zZQai/FI9J3": {
+                              "fill": "$--muted-foreground"
+                            },
+                            "zZQai/Yc2TA": {
+                              "fill": "$--muted-foreground"
+                            }
+                          }
+                        },
+                        {
+                          "type": "frame",
+                          "id": "lMxLt",
+                          "name": "Editor",
+                          "clip": true,
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "fill": "$--reader",
+                          "layout": "vertical",
+                          "children": [
+                            {
+                              "id": "sXdTF",
+                              "type": "ref",
+                              "ref": "vAcOS",
+                              "name": "Breadcrumb",
+                              "width": "fill_container"
+                            },
+                            {
+                              "id": "U9fxzO",
+                              "type": "ref",
+                              "ref": "gHGJu",
+                              "name": "Doc Header",
+                              "width": "fill_container",
+                              "alignItems": "center",
+                              "descendants": {
+                                "HuvdF": {
+                                  "content": "ЧЕРНОВИК · КНИГА II"
+                                },
+                                "afO9A": {
+                                  "content": "16. Возвращение к записи"
+                                },
+                                "f6bXJW": {
+                                  "id": "BNnjk",
+                                  "type": "ref",
+                                  "ref": "Ahz96",
+                                  "name": "Mode Toggle",
+                                  "descendants": {
+                                    "H6xUI": {
+                                      "fill": "#00000000",
+                                      "effect": {
+                                        "type": "shadow",
+                                        "shadowType": "outer",
+                                        "enabled": false,
+                                        "color": "#00000000"
+                                      }
+                                    },
+                                    "SroTS": {
+                                      "content": "Чтение",
+                                      "fill": "$--muted-foreground",
+                                      "fontWeight": "normal"
+                                    },
+                                    "rhR2J": {
+                                      "fill": "$--card",
+                                      "effect": {
+                                        "type": "shadow",
+                                        "shadowType": "outer",
+                                        "color": "#1718281A",
+                                        "offset": {
+                                          "x": 0,
+                                          "y": 1
+                                        },
+                                        "blur": 2
+                                      }
+                                    },
+                                    "MTOBc": {
+                                      "content": "Черновик",
+                                      "fill": "$--foreground",
+                                      "fontWeight": "500"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "frame",
+                              "id": "hlWwy",
+                              "name": "Format Toolbar",
+                              "width": "fill_container",
+                              "fill": "$--reader",
+                              "stroke": "$--border",
+                              "strokeWidth": {
+                                "bottom": 1
+                              },
+                              "gap": 2,
+                              "padding": [
+                                8,
+                                40
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "id": "QDKN8",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "undo",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "undo"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "lCTcd",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "redo",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "redo"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "id": "i9mI1",
+                                  "name": "Sep",
+                                  "fill": "$--border",
+                                  "width": 1,
+                                  "height": 18
+                                },
+                                {
+                                  "id": "sAZZk",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "bold",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "bold"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "G4X8a",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "italic",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "italic"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "id": "A6kPkn",
+                                  "name": "Sep",
+                                  "fill": "$--border",
+                                  "width": 1,
+                                  "height": 18
+                                },
+                                {
+                                  "id": "xpaj8",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "heading",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "heading"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "TwLOa",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "quote",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "quote"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "SpjaN",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "list",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "list"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "id": "GqloV",
+                                  "name": "Sep",
+                                  "fill": "$--border",
+                                  "width": 1,
+                                  "height": 18
+                                },
+                                {
+                                  "id": "pbk3G",
+                                  "type": "ref",
+                                  "ref": "hpBai",
+                                  "name": "link",
+                                  "descendants": {
+                                    "o4M3Ot": {
+                                      "icon": "link"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "D36b5r",
+                              "name": "Scroll",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "padding": 40,
+                              "justifyContent": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "Sr4ID",
+                                  "name": "Measure",
+                                  "width": 660,
+                                  "layout": "vertical",
+                                  "gap": 18,
+                                  "children": [
+                                    {
+                                      "id": "VBfvZ",
+                                      "type": "ref",
+                                      "ref": "iRsyY",
+                                      "name": "Para",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Wqhxa": {
+                                          "content": "Мара вернулась к колоколу, когда порт уже затих. Она помнила, что в протоколе её имя стояло первым, и теперь хотела понять, кто и зачем правил ту страницу.",
+                                          "fontSize": 18,
+                                          "lineHeight": 1.62
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "lmffE",
+                                      "type": "ref",
+                                      "ref": "iRsyY",
+                                      "name": "Para",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "Wqhxa": {
+                                          "content": "Знак на полях оказался не случайной чертой. Кто-то отмечал строки, к которым возвращался снова и снова.",
+                                          "fontSize": 18,
+                                          "lineHeight": 1.62
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "r8k90M",
+                                      "name": "Active Line",
+                                      "width": "fill_container",
+                                      "fill": "$--citation",
+                                      "cornerRadius": "$--radius-xs",
+                                      "gap": 1,
+                                      "padding": [
+                                        2,
+                                        4
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "R6a0Fv",
+                                          "name": "Text",
+                                          "fill": "$--reader-foreground",
+                                          "content": "Сава молчал, но его молчание было громче любого признания",
+                                          "lineHeight": 1.62,
+                                          "fontFamily": "$--font-serif",
+                                          "fontSize": 18,
+                                          "fontWeight": "normal"
+                                        },
+                                        {
+                                          "type": "rectangle",
+                                          "id": "MRO9z",
+                                          "x": 535,
+                                          "y": 2.5,
+                                          "name": "Caret",
+                                          "enabled": false,
+                                          "fill": "$--primary",
+                                          "width": 2,
+                                          "height": 24
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "YUz6t",
+                                      "name": "Placeholder",
+                                      "width": "fill_container",
+                                      "gap": 8,
+                                      "padding": [
+                                        4,
+                                        0
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "jPNt8",
+                                          "name": "Hint",
+                                          "fill": "$--subtle-foreground",
+                                          "content": "Продолжайте писать или нажмите «/» для команды…",
+                                          "fontFamily": "$--font-serif",
+                                          "fontSize": 18,
+                                          "fontWeight": "normal",
+                                          "fontStyle": "italic"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Hns7B",
+                              "name": "Draft Footer",
+                              "width": "fill_container",
+                              "height": 60,
+                              "fill": "$--reader",
+                              "stroke": "$--border",
+                              "strokeWidth": {
+                                "top": 1
+                              },
+                              "padding": [
+                                0,
+                                40
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "wdC8q",
+                                  "name": "Save Status",
+                                  "gap": 7,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "sA2va",
+                                      "name": "Icon",
+                                      "width": 15,
+                                      "height": 15,
+                                      "icon": "cloud-check",
+                                      "library": "lucide",
+                                      "fill": "$--color-success-foreground"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "MXDk4",
+                                      "name": "Label",
+                                      "fill": "$--muted-foreground",
+                                      "content": "Черновик сохранён · 2 мин назад",
+                                      "fontFamily": "$--font-sans",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "KGpgG",
+                                  "name": "Count",
+                                  "fill": "$--subtle-foreground",
+                                  "content": "320 слов · 3 абзаца",
+                                  "fontFamily": "$--font-mono",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal",
+                                  "letterSpacing": 0.5
+                                },
+                                {
+                                  "id": "F8JViJ",
+                                  "type": "ref",
+                                  "ref": "g0rPyw",
+                                  "name": "Publish",
+                                  "descendants": {
+                                    "rmcGv": {
+                                      "icon": "upload"
+                                    },
+                                    "HlNIo": {
+                                      "content": "Опубликовать"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "xCqvF",
+                          "name": "Agent Panel",
+                          "clip": true,
+                          "width": 440,
+                          "height": "fill_container",
+                          "fill": "$--card",
+                          "stroke": "$--border",
+                          "strokeWidth": {
+                            "left": 1
+                          },
+                          "layout": "vertical",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Xhb0x",
+                              "name": "Tabs Bar",
+                              "width": "fill_container",
+                              "fill": "$--card",
+                              "stroke": "$--border",
+                              "strokeWidth": {
+                                "bottom": 1
+                              },
+                              "padding": [
+                                0,
+                                10
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "xsMsN",
+                                  "name": "Tabs",
+                                  "gap": 4,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "r6hiyz",
+                                      "type": "ref",
+                                      "ref": "G5Vch",
+                                      "name": "Tab Structure",
+                                      "descendants": {
+                                        "mBKc3": {
+                                          "content": "Структура"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "MdD6C",
+                                      "type": "ref",
+                                      "ref": "G5Vch",
+                                      "name": "Tab Notes",
+                                      "descendants": {
+                                        "mBKc3": {
+                                          "content": "Заметки"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "KHJHp",
+                                      "type": "ref",
+                                      "ref": "feSIg",
+                                      "name": "Tab Chat",
+                                      "descendants": {
+                                        "saxA9": {
+                                          "content": "Чат"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "SjHfV",
+                                  "name": "Chat Actions",
+                                  "gap": 2,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "kipfh",
+                                      "type": "ref",
+                                      "ref": "hpBai",
+                                      "name": "History",
+                                      "descendants": {
+                                        "o4M3Ot": {
+                                          "icon": "history"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "spvnQ",
+                                      "type": "ref",
+                                      "ref": "hpBai",
+                                      "name": "New",
+                                      "descendants": {
+                                        "o4M3Ot": {
+                                          "icon": "square-pen"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "b5FlVB",
+                              "name": "Thread",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 14,
+                              "padding": 16,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "PW6NF",
+                                  "name": "Selection Context",
+                                  "width": "fill_container",
+                                  "fill": "$--secondary",
+                                  "cornerRadius": "$--radius-sm",
+                                  "stroke": "$--primary",
+                                  "strokeWidth": {
+                                    "left": 3
+                                  },
+                                  "layout": "vertical",
+                                  "gap": 4,
+                                  "padding": [
+                                    8,
+                                    10
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "u48NA",
+                                      "name": "Label",
+                                      "fill": "$--subtle-foreground",
+                                      "content": "ВЫДЕЛЕНО В ЧЕРНОВИКЕ · ГЛ. 16",
+                                      "fontFamily": "$--font-mono",
+                                      "fontSize": 10,
+                                      "fontWeight": "normal",
+                                      "letterSpacing": 0.5
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "owx5R",
+                                      "name": "Quote",
+                                      "fill": "$--reader-foreground",
+                                      "textGrowth": "fixed-width",
+                                      "width": "fill_container",
+                                      "content": "«Сава молчал, но его молчание было громче любого признания»",
+                                      "lineHeight": 1.4,
+                                      "fontFamily": "$--font-serif",
+                                      "fontSize": 13,
+                                      "fontWeight": "normal",
+                                      "fontStyle": "italic"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "HOaeZ",
+                                  "type": "ref",
+                                  "ref": "K5Ahz",
+                                  "name": "User",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "Nz30i": {
+                                      "content": "Проверь пунктуацию и как это стыкуется с каноном."
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "yhFin",
+                                  "type": "ref",
+                                  "ref": "uxIao",
+                                  "name": "Reasoning",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "JbQAu": {
+                                      "content": "Сверюсь с поведением Савы в главах 9–11 и проверю запятые в предложении."
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "vngS1",
+                                  "type": "ref",
+                                  "ref": "HFGy2",
+                                  "name": "Tool Read",
+                                  "descendants": {
+                                    "bhdsc": {
+                                      "icon": "file-pen"
+                                    },
+                                    "Z4tiFv": {
+                                      "content": "Чтение черновика · гл. 16"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "RMGhP",
+                                  "type": "ref",
+                                  "ref": "HFGy2",
+                                  "name": "Tool Canon",
+                                  "descendants": {
+                                    "bhdsc": {
+                                      "icon": "scale"
+                                    },
+                                    "Z4tiFv": {
+                                      "content": "Сверка с каноном · гл. 9–11"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "I94Hp",
+                                  "type": "ref",
+                                  "ref": "MGEnt",
+                                  "name": "Text",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "iQbIr": {
+                                      "content": "В каноне Сава молчит из страха, не из вины, — формулировка согласуется. Нашёл пропущенную запятую:"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "s55Krd",
+                                  "type": "ref",
+                                  "ref": "XKP9x",
+                                  "name": "Suggestion",
+                                  "width": "fill_container"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "E0faGo",
+                                  "name": "Preparing",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "ellipse",
+                                      "id": "fiE7u",
+                                      "name": "Pulse",
+                                      "fill": "$--primary",
+                                      "width": 8,
+                                      "height": 8
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "rWtFX",
+                                      "name": "Meta",
+                                      "fill": "$--muted-foreground",
+                                      "content": "Готовлю предложение…",
+                                      "fontFamily": "$--font-mono",
+                                      "fontSize": 12,
+                                      "fontWeight": "normal",
+                                      "letterSpacing": 1
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "RiFhq",
+                              "name": "Composer Area",
+                              "width": "fill_container",
+                              "fill": "$--card",
+                              "stroke": "$--border",
+                              "strokeWidth": {
+                                "top": 1
+                              },
+                              "layout": "vertical",
+                              "gap": 10,
+                              "padding": [
+                                12,
+                                16
+                              ],
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "xyOKQ",
+                                  "name": "Quick Tools",
+                                  "width": "fill_container",
+                                  "gap": 6,
+                                  "children": [
+                                    {
+                                      "id": "DGrqa",
+                                      "type": "ref",
+                                      "ref": "b8frcp",
+                                      "name": "Canon",
+                                      "descendants": {
+                                        "LLFZp": {
+                                          "icon": "book"
+                                        },
+                                        "b6vKfI": {
+                                          "content": "Канон"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "AIHVc",
+                                      "type": "ref",
+                                      "ref": "b8frcp",
+                                      "name": "Punct",
+                                      "descendants": {
+                                        "LLFZp": {
+                                          "icon": "spell-check"
+                                        },
+                                        "b6vKfI": {
+                                          "content": "Пунктуация"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "wQpR4",
+                                      "type": "ref",
+                                      "ref": "b8frcp",
+                                      "name": "Style",
+                                      "descendants": {
+                                        "LLFZp": {
+                                          "icon": "feather"
+                                        },
+                                        "b6vKfI": {
+                                          "content": "Стиль"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "id": "HS7ah",
+                                  "type": "ref",
+                                  "ref": "HGk0G",
+                                  "name": "Composer",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "AhNaF": {
+                                      "content": "Спросите агента о черновике…"
+                                    },
+                                    "E58GUO": {
+                                      "fill": "$--secondary"
+                                    },
+                                    "CXt2M": {
+                                      "fill": "$--muted-foreground"
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "Wjfmo",
+                      "type": "ref",
+                      "ref": "vMrkS",
+                      "name": "Scrollbar",
+                      "layoutPosition": "absolute",
+                      "x": 988,
+                      "y": 150,
+                      "height": 320
+                    },
+                    {
+                      "id": "tbxiC",
+                      "type": "ref",
+                      "ref": "vMrkS",
+                      "name": "Scrollbar",
+                      "layoutPosition": "absolute",
+                      "x": 1430,
+                      "y": 120,
+                      "height": 300
+                    }
+                  ]
                 }
               ]
             }
@@ -23878,5 +25753,6 @@
       "type": "color",
       "value": "#EEF0FB"
     }
-  }
+  },
+  "fileToken": "cceb8b4a-4f3b-486f-bbf3-2ff1f111fd77"
 }

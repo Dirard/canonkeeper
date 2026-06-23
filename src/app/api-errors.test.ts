@@ -8,6 +8,8 @@ function statusError(status: number, detail?: string) {
     title: `Status ${status}`,
     status,
     detail,
+    code: `status_${status}`,
+    requestId: 'req_test',
   };
   return new ApiStatusError(status, problem, new Response(null, { status }));
 }

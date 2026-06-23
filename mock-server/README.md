@@ -19,7 +19,7 @@ The mock API server is a dev/demo-only HTTP/SSE backend substitute for the Canon
 - The server uses synthetic in-memory data and resets on server restart.
 - Auth uses the OpenAPI cookie model: `ck_session` is issued by login/register and required for protected endpoints.
 - `MOCK_RETURN_STATUS` or `mock-return-status` can be sent by tests/dev harnesses to force a safe OpenAPI-shaped error body.
-- Chat messages stream deterministic `text/event-stream` frames over the `sendChatMessage` endpoint.
+- Chat turns are created with `POST /chats/{chatId}/turns`; deterministic `text/event-stream` frames are read from `GET /chat-turns/{turnId}/events`.
 
 ## Safety
 

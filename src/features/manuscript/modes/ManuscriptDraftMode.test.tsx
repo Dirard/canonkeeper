@@ -36,7 +36,7 @@ function renderDraft(path?: string, query?: Record<string, string>, configureApi
 }
 
 function apiProblem(status: number, title: string): ApiProblem {
-  return { type: 'about:blank', title, status };
+  return { type: 'about:blank', title, status, code: `status_${status}`, requestId: 'req_test' };
 }
 
 function statusError(status: number, title: string) {
@@ -104,6 +104,24 @@ describe('ManuscriptDraftMode', () => {
     expect(screen.getByRole('toolbar', { name: 'Форматирование черновика' })).toBeTruthy();
   });
 
+  it('opens draft mode as read-only for project viewers', async () => {
+    renderDraft(undefined, undefined, (api) => {
+      (api as ReturnType<typeof createMockApiClient>).setScenario({ preset: 'normal', actorRole: 'viewer' });
+    });
+
+    expect(await screen.findByRole('heading', { name: '16. Возвращение к записи' })).toBeTruthy();
+    expect(screen.queryByRole('toolbar', { name: 'Форматирование черновика' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Черновик' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Опубликовать' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Новая глава' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Новый чат' })).toHaveProperty('disabled', true);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Чат' }));
+    expect(await screen.findByText('Редакторский агент')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Сообщение редакторскому агенту' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Отправить редакторскому агенту' })).toHaveProperty('disabled', true);
+  });
+
   it('opens a new chapter draft from the editor structure rail', async () => {
     const { navigate } = renderDraft();
 
@@ -122,8 +140,8 @@ describe('ManuscriptDraftMode', () => {
     expect(await screen.findByRole('heading', { name: '16. Возвращение к записи' })).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: 'Чат' }));
 
-    const sendChatMessage = vi.spyOn(api, 'sendChatMessage');
-    const requestAgentSuggestion = vi.spyOn(api, 'requestAgentSuggestion');
+    const createChatTurn = vi.spyOn(api, 'createChatTurn');
+    const startAgentRun = vi.spyOn(api, 'startAgentRun');
     expect(await screen.findByText('Редакторский агент')).toBeTruthy();
     expect(screen.getByText('Работает с текущей главой и выделенным фрагментом. Чаты саги открываются отдельно на странице «Чат».')).toBeTruthy();
     expect(screen.queryByRole('textbox', { name: 'Сообщение по главе' })).toBeNull();
@@ -132,8 +150,8 @@ describe('ManuscriptDraftMode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Отправить редакторскому агенту' }));
 
     expect(await screen.findByText(/Подготовил точечную правку/)).toBeTruthy();
-    expect(requestAgentSuggestion).toHaveBeenCalled();
-    expect(sendChatMessage).not.toHaveBeenCalled();
+    expect(startAgentRun).toHaveBeenCalled();
+    expect(createChatTurn).not.toHaveBeenCalled();
 
     navigate.mockClear();
     fireEvent.click(screen.getByRole('button', { name: /Упоминания Мары/ }));
@@ -174,6 +192,36 @@ describe('ManuscriptDraftMode', () => {
 
     expect(await screen.findByText('Черновик изменился в другом окне.')).toBeTruthy();
     expect(screen.getByRole('heading', { name: '16. Возвращение к записи' })).toBeTruthy();
+    expect(editorText(editor)).toBe('Новая конфликтная строка');
+  });
+
+  it('overwrites a conflict against the fresh server draft revision', async () => {
+    const { api } = renderDraft();
+    const editor = await screen.findByRole('textbox', { name: 'Текст черновика' });
+    const serverChapter = await api.getChapter('chapter-16');
+    const freshChapter = { ...serverChapter, draftRevision: 42 };
+    const savedChapter = {
+      ...freshChapter,
+      draftRevision: 43,
+      paragraphs: freshChapter.paragraphs.map((paragraph, index) =>
+        index === 0 ? { ...paragraph, text: 'Новая конфликтная строка', markdown: 'Новая конфликтная строка' } : paragraph,
+      ),
+    };
+    const updateChapter = vi.spyOn(api, 'updateChapter');
+    vi.spyOn(api, 'getChapter').mockResolvedValueOnce(freshChapter);
+    updateChapter.mockRejectedValueOnce(statusError(409, 'Черновик изменился в другом окне.'));
+    updateChapter.mockResolvedValueOnce(savedChapter);
+
+    await replaceEditorText(editor, 'Новая конфликтная строка');
+    fireEvent.keyDown(editor, { key: 's', ctrlKey: true });
+    expect(await screen.findByText('Черновик изменился в другом окне.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить мою версию' }));
+
+    await waitFor(() =>
+      expect(updateChapter).toHaveBeenLastCalledWith('chapter-16', expect.objectContaining({ expectedRevision: 42 })),
+    );
+    expect(await screen.findByText('Ваша версия сохранена поверх актуальной серверной ревизии.')).toBeTruthy();
     expect(editorText(editor)).toBe('Новая конфликтная строка');
   });
 
@@ -325,7 +373,7 @@ describe('ManuscriptDraftMode', () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(
         '/manuscript/books',
-        expect.objectContaining({ bookId: 'book-02', chapterId: 'chapter-02-17', mode: 'draft' }),
+        expect.objectContaining({ bookId: 'book-02', chapterId: expect.stringMatching(/^chapter-02-\d+$/), mode: 'draft' }),
       ),
     );
   });

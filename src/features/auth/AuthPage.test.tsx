@@ -2,17 +2,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { MockApiError } from '../../api/mock/scenarios';
 import { createCanonKeeperApiClient } from '../../shared/api';
 import { createAuthHandlers, mswApiBaseUrl } from '../../test/msw/handlers';
 import { mswServer } from '../../test/msw/server';
 import { AuthPage } from './AuthPage';
 
 function createTestApi() {
-  return createCanonKeeperApiClient({ baseUrl: mswApiBaseUrl });
+  return createCanonKeeperApiClient({
+    baseUrl: mswApiBaseUrl,
+    fetch: async (request) => {
+      const headers = new Headers(request.headers);
+      headers.set('origin', 'http://localhost:3000');
+      return fetch(request, { headers });
+    },
+  });
 }
 
 function validPassphrase() {
-  return Array.from({ length: 12 }, (_item, index) => String((index + 3) % 10)).join('');
+  return 'white-port-12';
 }
 
 function renderAuth(ui: ReactElement) {
@@ -58,16 +66,19 @@ describe('AuthPage', () => {
     expect(loginRequests).toEqual([{ rememberMe: false }]);
   });
 
-  it('submits login with a short non-empty password', async () => {
+  it('submits login with a short non-empty password and surfaces auth failure', async () => {
     const onSuccess = vi.fn();
-    mswServer.use(...createAuthHandlers());
+    const loginRequests: Array<{ rememberMe?: unknown }> = [];
+    mswServer.use(...createAuthHandlers({ onLogin: (body) => loginRequests.push(body) }));
     renderAuth(<AuthPage api={createTestApi()} mode="login" onModeChange={vi.fn()} onSuccess={onSuccess} />);
 
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'reader@example.com' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'mira@example.com' } });
     fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
-    await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByText('Неверный email или пароль.')).toBeTruthy());
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(loginRequests).toEqual([{ rememberMe: true }]);
   });
 
   it('gates registration on accepted terms using MSW network handlers', async () => {
@@ -83,11 +94,30 @@ describe('AuthPage', () => {
 
     fireEvent.click(screen.getByLabelText('Принимаю условия работы с черновиками'));
     fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'Мира Волкова' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'mira@example.com' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new-author@example.test' } });
     fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: validPassphrase() } });
     fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
     expect(registerRequests).toEqual([{ acceptedTerms: true, displayName: 'Мира Волкова' }]);
+  });
+
+  it('uses registration copy for registration failures', async () => {
+    const onSuccess = vi.fn();
+    mswServer.use(...createAuthHandlers({
+      onRegister: () => {
+        throw new MockApiError(409, 'Registration could not be completed.', 'registerUser', 'registration_conflict');
+      },
+    }));
+    renderAuth(<AuthPage api={createTestApi()} mode="register" onModeChange={vi.fn()} onSuccess={onSuccess} />);
+
+    fireEvent.click(screen.getByLabelText('Принимаю условия работы с черновиками'));
+    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'Мира Волкова' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new-author@example.test' } });
+    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: validPassphrase() } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    expect(await screen.findByText('Не удалось создать аккаунт. Проверьте данные и попробуйте снова.')).toBeTruthy();
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });

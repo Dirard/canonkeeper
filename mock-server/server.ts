@@ -1,12 +1,13 @@
-import { createServer, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
+import { createHash } from 'node:crypto';
+import { createServer, type IncomingHttpHeaders, type IncomingMessage, type Server as HttpServer, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import {
   operationManifest,
   type OperationId,
   type OperationRoute,
 } from '../src/shared/api/generated/operation-manifest';
-import type { LlmStreamEvent, OperationRequest, SearchScope } from '../src/shared/api';
-import { MockApiError } from '../src/api/mock/scenarios';
+import type { ChatTurnEventMessage, OperationParameters, OperationRequest } from '../src/shared/api';
+import { MockApiError, type MockActorRole, type MockScenarioControl } from '../src/api/mock/scenarios';
 import { createMockApiClient, type MockRepository } from '../src/api/mock/repository';
 
 const apiBasePath = '/api/v1';
@@ -14,7 +15,19 @@ const defaultHost = '127.0.0.1';
 const defaultPort = 8787;
 const sessionCookieName = 'ck_session';
 const sessionCookieValue = 'mock-session';
-const maxBodyBytes = 1_000_000;
+const csrfTokenPrefix = 'ck_mock_csrf_token_';
+const sessionCookieMaxAgeSeconds = 43_200;
+const maxBodyBytes = 50 * 1024 * 1024;
+const minIdempotencyKeyLength = 8;
+const maxIdempotencyKeyLength = 128;
+const allowedCorsOrigins = new Set([
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://[::1]:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://[::1]:5173',
+]);
 
 export interface MockApiLogEvent {
   requestId: string;
@@ -39,6 +52,9 @@ export interface MockApiServerController {
 
 interface OperationContext {
   body: unknown;
+  csrfState: CsrfState;
+  headers: IncomingHttpHeaders;
+  idempotencyKey?: string;
   pathParams: Record<string, string>;
   query: URLSearchParams;
   repository: MockRepository;
@@ -48,10 +64,25 @@ interface OperationHandlerResult {
   body?: unknown;
   headers?: Record<string, string | string[]>;
   status?: number;
-  stream?: AsyncIterable<LlmStreamEvent>;
+  stream?: AsyncIterable<ChatTurnEventMessage>;
 }
 
 type OperationHandler = (context: OperationContext) => Promise<OperationHandlerResult> | OperationHandlerResult;
+interface IdempotencyRecord {
+  body: unknown;
+  fingerprint: string;
+  headers?: Record<string, string | string[]>;
+  status: number;
+}
+interface CsrfState {
+  tokenVersion: number;
+}
+type ProjectJobsQuery = NonNullable<OperationParameters<'listProjectJobs'>['query']>;
+type CursorListQuery = {
+  cursor?: string;
+  limit?: number;
+};
+type AgentSuggestionsQuery = NonNullable<OperationParameters<'listAgentSuggestions'>['query']>;
 
 interface CompiledRoute {
   operationId: OperationId;
@@ -70,20 +101,33 @@ const successStatuses: Partial<Record<OperationId, number>> = {
   createProject: 201,
   createBook: 201,
   importBookFile: 202,
+  startProjectIndexing: 202,
   createBookExport: 202,
   createChapter: 201,
   createChapterAnnotation: 201,
   createChatSession: 201,
-  requestAgentSuggestion: 201,
+  createChatTurn: 202,
+  createProjectInvitation: 201,
+  startAgentRun: 202,
   logoutUser: 204,
   deleteProject: 204,
   deleteBook: 204,
   deleteChapter: 204,
+  removeProjectMember: 204,
   deleteReaderAnnotation: 204,
   deleteChatSession: 204,
 };
 
-const publicOperations = new Set<OperationId>(['registerUser', 'loginUser']);
+const publicOperations = new Set<OperationId>(['getCsrfToken', 'registerUser', 'loginUser']);
+const idempotentOperations = new Set<OperationId>(['importBookFile', 'createBookExport', 'startProjectIndexing', 'createChatTurn', 'startAgentRun']);
+
+function currentCsrfTokenValue(state: CsrfState) {
+  return `${csrfTokenPrefix}${String(state.tokenVersion).padStart(6, '0')}`;
+}
+
+function rotateCsrfToken(state: CsrfState) {
+  state.tokenVersion += 1;
+}
 
 const routes: CompiledRoute[] = (
   Object.entries(operationManifest) as Array<[OperationId, OperationRoute<OperationId>]>
@@ -95,6 +139,13 @@ const routes: CompiledRoute[] = (
 }));
 
 const handlers = {
+  getCsrfToken: ({ csrfState }) => ({
+    body: {
+      csrfToken: currentCsrfTokenValue(csrfState),
+      expiresAt: futureTimestamp(10),
+      rotation: 'refreshed',
+    },
+  }),
   registerUser: async ({ body, repository }) => ({
     body: await repository.register(bodyAs<'registerUser'>(body)),
     headers: sessionHeaders(),
@@ -107,8 +158,12 @@ const handlers = {
     await repository.logout();
     return { headers: clearSessionHeaders() };
   },
+  rotateSession: async ({ repository }) => ({
+    body: await repository.rotateSession(),
+    headers: sessionHeaders(),
+  }),
   getCurrentUser: async ({ repository }) => ({ body: await repository.getCurrentUser() }),
-  listProjects: async ({ repository }) => ({ body: await repository.listProjects() }),
+  listProjects: async ({ query, repository }) => ({ body: await repository.listProjects(cursorListQuery(query)) }),
   createProject: async ({ body, repository }) => ({ body: await repository.createProject(bodyAs<'createProject'>(body)) }),
   getProject: async ({ pathParams, repository }) => ({ body: await repository.getProject(param(pathParams, 'projectId')) }),
   updateProject: async ({ body, pathParams, repository }) => ({
@@ -118,7 +173,33 @@ const handlers = {
     await repository.deleteProject(param(pathParams, 'projectId'));
     return {};
   },
-  listBooks: async ({ pathParams, repository }) => ({ body: await repository.listBooks(param(pathParams, 'projectId')) }),
+  listProjectMembers: async ({ pathParams, query, repository }) => ({
+    body: await repository.listProjectMembers(param(pathParams, 'projectId'), cursorListQuery(query)),
+  }),
+  updateProjectMemberRole: async ({ body, pathParams, repository }) => {
+    const projectId = param(pathParams, 'projectId');
+    return { body: await repository.updateProjectMemberRole(projectId, param(pathParams, 'memberId'), bodyAs<'updateProjectMemberRole'>(body)) };
+  },
+  removeProjectMember: async ({ pathParams, repository }) => {
+    await repository.removeProjectMember(param(pathParams, 'projectId'), param(pathParams, 'memberId'));
+    return {};
+  },
+  listProjectInvitations: async ({ pathParams, query, repository }) => ({
+    body: await repository.listProjectInvitations(param(pathParams, 'projectId'), cursorListQuery(query)),
+  }),
+  listMyProjectInvitations: async ({ query, repository }) => ({
+    body: await repository.listMyProjectInvitations(cursorListQuery(query)),
+  }),
+  createProjectInvitation: async ({ body, pathParams, repository }) => {
+    return { body: await repository.createProjectInvitation(param(pathParams, 'projectId'), bodyAs<'createProjectInvitation'>(body)) };
+  },
+  cancelProjectInvitation: async ({ pathParams, repository }) => ({ body: await repository.cancelProjectInvitation(param(pathParams, 'invitationId')) }),
+  acceptProjectInvitation: async ({ pathParams, repository }) => ({
+    body: await repository.acceptProjectInvitation(param(pathParams, 'invitationId')),
+  }),
+  listBooks: async ({ pathParams, query, repository }) => ({
+    body: await repository.listBooks(param(pathParams, 'projectId'), cursorListQuery(query)),
+  }),
   createBook: async ({ body, pathParams, repository }) => ({
     body: await repository.createBook(param(pathParams, 'projectId'), bodyAs<'createBook'>(body)),
   }),
@@ -133,23 +214,28 @@ const handlers = {
   getImportConstraints: async ({ pathParams, repository }) => ({
     body: await repository.getImportConstraints(param(pathParams, 'projectId')),
   }),
-  importBookFile: async ({ body, pathParams, repository }) => ({
-    body: await repository.importBookFile(param(pathParams, 'projectId'), bodyAs<'importBookFile'>(body)),
+  importBookFile: async ({ body, idempotencyKey, pathParams, repository }) => {
+    const responseBody = await repository.importBookFile(param(pathParams, 'projectId'), bodyAs<'importBookFile'>(body), { idempotencyKey: idempotencyKey ?? '' });
+    return { body: responseBody, headers: asyncStartHeaders(responseBody) };
+  },
+  listProjectJobs: async ({ pathParams, query, repository }) => ({
+    body: await repository.listProjectJobs(param(pathParams, 'projectId'), projectJobsQuery(query)),
   }),
-  listIndexingJobs: async ({ pathParams, repository }) => ({
-    body: await repository.listIndexingJobs(param(pathParams, 'projectId')),
+  startProjectIndexing: async ({ body, idempotencyKey, pathParams, repository }) => {
+    const responseBody = await repository.startProjectIndexing(param(pathParams, 'projectId'), bodyAs<'startProjectIndexing'>(body), { idempotencyKey: idempotencyKey ?? '' });
+    return { body: responseBody, headers: asyncStartHeaders(responseBody) };
+  },
+  getJob: async ({ pathParams, repository }) => ({ body: await repository.getJob(param(pathParams, 'jobId')) }),
+  cancelJob: async ({ pathParams, repository }) => ({
+    body: await repository.cancelJob(param(pathParams, 'jobId')),
   }),
-  getIndexingJob: async ({ pathParams, repository }) => ({ body: await repository.getIndexingJob(param(pathParams, 'jobId')) }),
-  cancelIndexingJob: async ({ pathParams, repository }) => ({
-    body: await repository.cancelIndexingJob(param(pathParams, 'jobId')),
+  createBookExport: async ({ body, idempotencyKey, pathParams, repository }) => {
+    const responseBody = await repository.createBookExport(param(pathParams, 'bookId'), bodyAs<'createBookExport'>(body), { idempotencyKey: idempotencyKey ?? '' });
+    return { body: responseBody, headers: asyncStartHeaders(responseBody) };
+  },
+  listChapters: async ({ pathParams, query, repository }) => ({
+    body: await repository.listChapters(param(pathParams, 'bookId'), cursorListQuery(query)),
   }),
-  createBookExport: async ({ body, pathParams, repository }) => ({
-    body: await repository.createBookExport(param(pathParams, 'bookId'), bodyAs<'createBookExport'>(body)),
-  }),
-  getExportJob: async ({ pathParams, repository }) => ({
-    body: await repository.getExportJob(param(pathParams, 'exportJobId')),
-  }),
-  listChapters: async ({ pathParams, repository }) => ({ body: await repository.listChapters(param(pathParams, 'bookId')) }),
   createChapter: async ({ body, pathParams, repository }) => ({
     body: await repository.createChapter(param(pathParams, 'bookId'), bodyAs<'createChapter'>(body)),
   }),
@@ -164,8 +250,8 @@ const handlers = {
     await repository.deleteChapter(param(pathParams, 'chapterId'));
     return {};
   },
-  listChapterAnnotations: async ({ pathParams, repository }) => ({
-    body: await repository.listChapterAnnotations(param(pathParams, 'chapterId')),
+  listChapterAnnotations: async ({ pathParams, query, repository }) => ({
+    body: await repository.listChapterAnnotations(param(pathParams, 'chapterId'), cursorListQuery(query)),
   }),
   createChapterAnnotation: async ({ body, pathParams, repository }) => ({
     body: await repository.createChapterAnnotation(param(pathParams, 'chapterId'), bodyAs<'createChapterAnnotation'>(body)),
@@ -177,15 +263,15 @@ const handlers = {
     await repository.deleteReaderAnnotation(param(pathParams, 'annotationId'));
     return {};
   },
-  searchProject: async ({ pathParams, query, repository }) => ({
-    body: await repository.searchProject(
-      param(pathParams, 'projectId'),
-      query.get('q') ?? '',
-      (query.get('scope') as SearchScope | null) ?? undefined,
-    ),
-  }),
-  listChatSessions: async ({ pathParams, repository }) => ({
-    body: await repository.listChatSessions(param(pathParams, 'projectId')),
+  searchProject: async ({ body, pathParams, repository }) => {
+    const search = bodyAs<'searchProject'>(body);
+    const { query, scope, ...options } = search as OperationRequest<'searchProject'> & Record<string, unknown>;
+    return {
+      body: await repository.searchProject(param(pathParams, 'projectId'), query, scope, options, { allowSignal: false }),
+    };
+  },
+  listChatSessions: async ({ pathParams, query, repository }) => ({
+    body: await repository.listChatSessions(param(pathParams, 'projectId'), cursorListQuery(query)),
   }),
   createChatSession: async ({ body, pathParams, repository }) => ({
     body: await repository.createChatSession(param(pathParams, 'projectId'), bodyAs<'createChatSession'>(body)),
@@ -198,20 +284,31 @@ const handlers = {
     await repository.deleteChatSession(param(pathParams, 'chatId'));
     return {};
   },
-  listChatMessages: async ({ pathParams, repository }) => ({
-    body: await repository.listChatMessages(param(pathParams, 'chatId')),
+  listChatMessages: async ({ pathParams, query, repository }) => ({
+    body: await repository.listChatMessages(param(pathParams, 'chatId'), cursorListQuery(query)),
   }),
-  sendChatMessage: ({ body, pathParams, repository }) => ({
-    stream: repository.sendChatMessage(param(pathParams, 'chatId'), bodyAs<'sendChatMessage'>(body)),
+  createChatTurn: async ({ body, idempotencyKey, pathParams, repository }) => {
+    const responseBody = await repository.createChatTurn(param(pathParams, 'chatId'), bodyAs<'createChatTurn'>(body), { idempotencyKey: idempotencyKey ?? '' });
+    return { body: responseBody, headers: asyncStartHeaders(responseBody) };
+  },
+  getChatTurn: async ({ pathParams, repository }) => ({
+    body: await repository.getChatTurn(param(pathParams, 'turnId')),
+  }),
+  streamChatTurnEvents: ({ headers, pathParams, query, repository }) => ({
+    stream: repository.streamChatTurnEvents(param(pathParams, 'turnId'), {
+      afterEventId: query.get('afterEventId') ?? undefined,
+      lastEventId: singleHeader(headers['last-event-id']),
+    }),
   }),
   getChatArtifact: async ({ pathParams, repository }) => ({
     body: await repository.getChatArtifact(param(pathParams, 'artifactId')),
   }),
-  listAgentSuggestions: async ({ pathParams, repository }) => ({
-    body: await repository.listAgentSuggestions(param(pathParams, 'chapterId')),
-  }),
-  requestAgentSuggestion: async ({ body, pathParams, repository }) => ({
-    body: await repository.requestAgentSuggestion(param(pathParams, 'chapterId'), bodyAs<'requestAgentSuggestion'>(body)),
+  startAgentRun: async ({ body, idempotencyKey, pathParams, repository }) => {
+    const responseBody = await repository.startAgentRun(param(pathParams, 'chapterId'), bodyAs<'startAgentRun'>(body), { idempotencyKey: idempotencyKey ?? '' });
+    return { body: responseBody, headers: asyncStartHeaders(responseBody) };
+  },
+  listAgentSuggestions: async ({ pathParams, query, repository }) => ({
+    body: await repository.listAgentSuggestions(param(pathParams, 'chapterId'), agentSuggestionsQuery(query)),
   }),
   getAgentSuggestion: async ({ pathParams, repository }) => ({
     body: await repository.getAgentSuggestion(param(pathParams, 'suggestionId')),
@@ -219,17 +316,19 @@ const handlers = {
   approveAgentSuggestion: async ({ body, pathParams, repository }) => ({
     body: await repository.approveAgentSuggestion(param(pathParams, 'suggestionId'), bodyAs<'approveAgentSuggestion'>(body)),
   }),
-  rejectAgentSuggestion: async ({ pathParams, repository }) => ({
-    body: await repository.rejectAgentSuggestion(param(pathParams, 'suggestionId')),
+  rejectAgentSuggestion: async ({ body, pathParams, repository }) => ({
+    body: await repository.rejectAgentSuggestion(param(pathParams, 'suggestionId'), bodyAs<'rejectAgentSuggestion'>(body)),
   }),
-} satisfies Record<OperationId, OperationHandler>;
-const operationHandlers: Record<OperationId, OperationHandler> = handlers;
+} satisfies Partial<Record<OperationId, OperationHandler>>;
+const operationHandlers: Partial<Record<OperationId, OperationHandler>> = handlers;
 
 export function createMockApiServer(options: MockApiServerOptions = {}): MockApiServerController {
   const host = options.host ?? defaultHost;
   const port = options.port ?? defaultPort;
   const repository = createMockApiClient();
   const activeSessions = new Set<string>();
+  const idempotencyStore = new Map<string, IdempotencyRecord>();
+  const csrfState: CsrfState = { tokenVersion: 0 };
   let requestSequence = 0;
 
   const server = createServer(async (request, response) => {
@@ -246,7 +345,8 @@ export function createMockApiServer(options: MockApiServerOptions = {}): MockApi
         status = 204;
         response.writeHead(status, {
           'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-          'access-control-allow-headers': 'content-type, mock_return_status, mock-return-status',
+          'access-control-allow-headers':
+            'content-type, x-csrf-token, idempotency-key, last-event-id, mock_return_status, mock-return-status, mock_actor_role, mock-actor-role, mock_verified_email, mock-verified-email, mock_email_verified, mock-email-verified',
         });
         response.end();
         return;
@@ -261,10 +361,9 @@ export function createMockApiServer(options: MockApiServerOptions = {}): MockApi
       }
 
       operationId = match.operationId;
-      const overrideStatus = readStatusOverride(request);
-      if (overrideStatus !== undefined) {
-        status = overrideStatus;
-        sendProblem(response, status, titleForStatus(status), 'Mock status override.');
+      if (requiresStrictOrigin(request.method ?? 'GET', operationId) && !hasAllowedRequestOrigin(request)) {
+        status = 403;
+        sendProblem(response, status, 'Forbidden', 'Strict local Origin is required.');
         return;
       }
 
@@ -274,21 +373,82 @@ export function createMockApiServer(options: MockApiServerOptions = {}): MockApi
         return;
       }
 
+      if (requiresCsrf(request.method ?? 'GET') && !hasValidCsrf(request, csrfState)) {
+        status = 403;
+        sendProblem(response, status, 'Forbidden', 'Valid CSRF token or strict local Origin is required.');
+        return;
+      }
+
+      const previousScenario = repository.getScenario();
+      const scenarioOverride = readScenarioOverride(request);
+      const overrideStatus = readStatusOverride(request);
+      if (overrideStatus !== undefined && scenarioOverride.actorRole === undefined) {
+        status = overrideStatus;
+        sendProblem(response, status, titleForStatus(status), 'Mock status override.');
+        return;
+      }
       const body = await readRequestBody(request, operationId);
+      const idempotency = idempotencyContext(request, operationId, url.pathname, body);
+      if (idempotency) {
+        const existing = idempotencyStore.get(idempotency.key);
+        if (existing && existing.fingerprint !== idempotency.fingerprint) {
+          status = 409;
+          sendProblem(response, status, 'Conflict', 'Idempotency-Key was reused with a different request payload.');
+          return;
+        }
+        if (existing) {
+          status = existing.status;
+          sendJson(response, status, existing.body, existing.headers);
+          return;
+        }
+      }
       const handler = operationHandlers[operationId];
-      const result = await handler({
-        body,
-        pathParams: match.pathParams,
-        query: url.searchParams,
-        repository,
-      });
+      if (!handler) {
+        status = 501;
+        sendProblem(response, status, 'Not implemented', `Mock handler is not implemented for ${operationId}.`);
+        return;
+      }
+      const hasScenarioOverride = Object.keys(scenarioOverride).length > 0;
+      if (hasScenarioOverride) {
+        repository.setScenario({ ...previousScenario, ...scenarioOverride });
+      }
+      const result = await (async () => {
+        try {
+          return await handler({
+            body,
+            csrfState,
+            pathParams: match.pathParams,
+            query: url.searchParams,
+            headers: request.headers,
+            idempotencyKey: idempotency?.idempotencyKey,
+            repository,
+          });
+        } finally {
+          if (hasScenarioOverride) {
+            repository.setScenario(previousScenario);
+          }
+        }
+      })();
       status = result.status ?? successStatuses[operationId] ?? 200;
+      if (idempotency && !result.stream) {
+        idempotencyStore.set(idempotency.key, {
+          body: result.body,
+          fingerprint: idempotency.fingerprint,
+          headers: result.headers,
+          status,
+        });
+      }
 
       if (operationId === 'registerUser' || operationId === 'loginUser') {
         activeSessions.add(sessionCookieValue);
+        rotateCsrfToken(csrfState);
       }
       if (operationId === 'logoutUser') {
         activeSessions.delete(sessionCookieValue);
+        rotateCsrfToken(csrfState);
+      }
+      if (operationId === 'rotateSession') {
+        rotateCsrfToken(csrfState);
       }
 
       if (result.stream) {
@@ -299,9 +459,13 @@ export function createMockApiServer(options: MockApiServerOptions = {}): MockApi
 
       sendJson(response, status, result.body, result.headers);
     } catch (error) {
+      if (response.headersSent) {
+        response.end();
+        return;
+      }
       const problem = problemFromError(error);
       status = problem.status;
-      sendProblem(response, status, problem.title, problem.detail);
+      sendProblem(response, status, problem.title, problem.detail, problem.code);
     } finally {
       options.logger?.({
         requestId,
@@ -341,7 +505,10 @@ export function createMockApiServer(options: MockApiServerOptions = {}): MockApi
 }
 
 function matchRequest(method: string, pathname: string): MatchedRoute | null {
-  const apiPath = pathname.startsWith(apiBasePath) ? pathname.slice(apiBasePath.length) || '/' : pathname;
+  if (!pathname.startsWith(apiBasePath)) {
+    return null;
+  }
+  const apiPath = pathname.slice(apiBasePath.length) || '/';
   for (const route of routes) {
     if (route.method !== method.toUpperCase()) {
       continue;
@@ -359,6 +526,53 @@ function matchRequest(method: string, pathname: string): MatchedRoute | null {
   return null;
 }
 
+function cursorListQuery(query: URLSearchParams): CursorListQuery {
+  const result: CursorListQuery = {};
+  const limit = query.get('limit');
+  const cursor = query.get('cursor');
+  if (limit) {
+    result.limit = Number(limit);
+  }
+  if (cursor) {
+    result.cursor = cursor;
+  }
+  return result;
+}
+
+function agentSuggestionsQuery(query: URLSearchParams): AgentSuggestionsQuery {
+  const result = cursorListQuery(query) as AgentSuggestionsQuery;
+  const status = query.get('status');
+  const sourceMessageId = query.get('sourceMessageId');
+  const batchId = query.get('batchId');
+  if (status) {
+    result.status = status as AgentSuggestionsQuery['status'];
+  }
+  if (sourceMessageId) {
+    result.sourceMessageId = sourceMessageId;
+  }
+  if (batchId) {
+    result.batchId = batchId;
+  }
+  return result;
+}
+
+function projectJobsQuery(query: URLSearchParams): ProjectJobsQuery {
+  const result: ProjectJobsQuery = {};
+  const kind = query.get('kind');
+  const limit = query.get('limit');
+  const cursor = query.get('cursor');
+  if (kind) {
+    result.kind = kind as ProjectJobsQuery['kind'];
+  }
+  if (limit) {
+    result.limit = Number(limit);
+  }
+  if (cursor) {
+    result.cursor = cursor;
+  }
+  return result;
+}
+
 function bodyAs<TOperation extends OperationId>(body: unknown): OperationRequest<TOperation> {
   return body as OperationRequest<TOperation>;
 }
@@ -371,15 +585,29 @@ function param(pathParams: Record<string, string>, key: string) {
   return value;
 }
 
+function futureTimestamp(minutes: number) {
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+
+function asyncStartHeaders(body: unknown): Record<string, string> {
+  const jobId = body && typeof body === 'object' && 'jobId' in body ? (body as { jobId?: unknown }).jobId : undefined;
+  return {
+    Location: typeof jobId === 'string' ? `${apiBasePath}/jobs/${jobId}` : `${apiBasePath}/jobs`,
+    'Retry-After': '1',
+  };
+}
+
 function sessionHeaders() {
   return {
-    'set-cookie': `${sessionCookieName}=${sessionCookieValue}; Path=/; HttpOnly; SameSite=Lax`,
+    'set-cookie': `${sessionCookieName}=${sessionCookieValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${sessionCookieMaxAgeSeconds}`,
+    'cache-control': 'no-store',
   };
 }
 
 function clearSessionHeaders() {
   return {
     'set-cookie': `${sessionCookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
+    'cache-control': 'no-store',
   };
 }
 
@@ -413,44 +641,158 @@ function readStatusOverride(request: IncomingMessage) {
   return status;
 }
 
+function readActorRole(request: IncomingMessage): MockActorRole | undefined {
+  const raw = singleHeader(request.headers.mock_actor_role) ?? singleHeader(request.headers['mock-actor-role']);
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (raw === 'owner' || raw === 'admin' || raw === 'editor' || raw === 'viewer' || raw === 'non_member') {
+    return raw;
+  }
+  throw new MockApiError(400, 'Invalid mock actor role.', 'listProjects');
+}
+
+function readScenarioOverride(request: IncomingMessage): Partial<Pick<MockScenarioControl, 'actorRole' | 'emailVerified' | 'verifiedEmail'>> {
+  const actorRole = readActorRole(request);
+  const verifiedEmail = singleHeader(request.headers.mock_verified_email) ?? singleHeader(request.headers['mock-verified-email']);
+  const emailVerified = singleHeader(request.headers.mock_email_verified) ?? singleHeader(request.headers['mock-email-verified']);
+  return {
+    ...(actorRole ? { actorRole } : {}),
+    ...(emailVerified !== undefined ? { emailVerified: emailVerified !== 'false' } : {}),
+    ...(verifiedEmail ? { verifiedEmail } : {}),
+  };
+}
+
+function requiresCsrf(method: string) {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())) {
+    return false;
+  }
+  return true;
+}
+
+function requiresStrictOrigin(method: string, operationId: OperationId) {
+  return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase()) || operationId === 'searchProject';
+}
+
+function hasValidCsrf(request: IncomingMessage, state: CsrfState) {
+  return singleHeader(request.headers['x-csrf-token']) === currentCsrfTokenValue(state);
+}
+
 async function readRequestBody(request: IncomingMessage, operationId: OperationId) {
   if (request.method === 'GET' || request.method === 'HEAD') {
     return undefined;
   }
 
-  const raw = await readRawBody(request);
-  if (!raw) {
+  const raw = await readRawBody(request, operationId);
+  if (raw.byteLength === 0) {
+    if (operationId === 'importBookFile') {
+      throw new MockApiError(422, 'Multipart import requires a file part.', operationId);
+    }
     return undefined;
   }
 
   const contentType = singleHeader(request.headers['content-type']) ?? '';
+  if (operationId === 'importBookFile' && !contentType.includes('multipart/form-data')) {
+    throw new MockApiError(415, 'Multipart import requires multipart/form-data.', operationId);
+  }
   if (contentType.includes('application/json')) {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw.toString('utf8')) as unknown;
   }
 
   if (operationId === 'importBookFile' && contentType.includes('multipart/form-data')) {
-    return { file: extractMultipartFileName(raw) ?? 'mock-upload.epub' };
+    const file = extractMultipartFilePart(raw);
+    if (!file) {
+      throw new MockApiError(422, 'Multipart import requires a file part.', operationId);
+    }
+    return {
+      file,
+      metadata: extractMultipartJsonPart(raw, 'metadata', operationId),
+      options: extractMultipartJsonPart(raw, 'options', operationId),
+    };
   }
 
   return undefined;
 }
 
-async function readRawBody(request: IncomingMessage) {
+async function readRawBody(request: IncomingMessage, operationId: OperationId) {
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of request) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.byteLength;
     if (size > maxBodyBytes) {
-      throw new MockApiError(413, 'Request body is too large.', 'listProjects');
+      throw new MockApiError(413, 'Request body is too large.', operationId);
     }
     chunks.push(buffer);
   }
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
 }
 
-function extractMultipartFileName(raw: string) {
-  return /filename="([^"]+)"/.exec(raw)?.[1];
+function idempotencyContext(request: IncomingMessage, operationId: OperationId, pathname: string, body: unknown) {
+  if (!idempotentOperations.has(operationId)) {
+    return null;
+  }
+  const header = singleHeader(request.headers['idempotency-key']);
+  if (!header) {
+    throw new MockApiError(400, 'Idempotency-Key header is required.', operationId);
+  }
+  validateIdempotencyKey(operationId, header);
+  const principal = hashString(parseCookies(singleHeader(request.headers.cookie))[sessionCookieName] ?? 'anonymous');
+  return {
+    idempotencyKey: header,
+    key: `${principal}:${request.method ?? 'GET'}:${pathname}:${operationId}:${header}`,
+    fingerprint: stableStringify(body),
+  };
+}
+
+function validateIdempotencyKey(operationId: OperationId, idempotencyKey: string) {
+  if (idempotencyKey.length < minIdempotencyKeyLength || idempotencyKey.length > maxIdempotencyKeyLength) {
+    throw new MockApiError(400, 'Idempotency-Key must be between 8 and 128 characters.', operationId);
+  }
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+function extractMultipartFilePart(raw: Buffer) {
+  const text = raw.toString('latin1');
+  const match = /Content-Disposition:[^\r\n]*name="file"[^\r\n]*filename="([^"]+)"[^\r\n]*\r?\n([\s\S]*?)\r?\n\r?\n([\s\S]*?)(?=\r?\n--)/i.exec(text);
+  if (!match) {
+    return undefined;
+  }
+  const headers = match[2] ?? '';
+  const content = Buffer.from(match[3] ?? '', 'latin1');
+  const contentType = /content-type:\s*([^\r\n]+)/i.exec(headers)?.[1]?.trim() ?? null;
+  return {
+    name: match[1],
+    contentType,
+    sizeBytes: content.byteLength,
+    sha256: hashBuffer(content),
+  };
+}
+
+function extractMultipartJsonPart(raw: Buffer, name: string, operationId: OperationId) {
+  const text = raw.toString('latin1');
+  const match = new RegExp(`Content-Disposition:[^\\r\\n]*name="${name}"[^\\r\\n]*(?:\\r?\\n(?!\\r?\\n)[^\\r\\n]*)*\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)`, 'i').exec(text);
+  if (!match) {
+    return undefined;
+  }
+  const part = match[1] ?? '';
+  try {
+    return JSON.parse(Buffer.from(part, 'latin1').toString('utf8').trim()) as unknown;
+  } catch {
+    throw new MockApiError(400, `Malformed multipart JSON part: ${name}.`, operationId);
+  }
 }
 
 function appendCorsHeaders(request: IncomingMessage, response: ServerResponse) {
@@ -463,16 +805,36 @@ function appendCorsHeaders(request: IncomingMessage, response: ServerResponse) {
   response.setHeader('vary', 'Origin');
 }
 
+function hasAllowedRequestOrigin(request: IncomingMessage) {
+  const fetchSite = singleHeader(request.headers['sec-fetch-site']);
+  if (fetchSite === 'cross-site') {
+    return false;
+  }
+  const origin = singleHeader(request.headers.origin);
+  if (origin) {
+    return isAllowedLocalOrigin(origin);
+  }
+  const referer = singleHeader(request.headers.referer);
+  if (referer) {
+    return isAllowedLocalOrigin(referer);
+  }
+  return false;
+}
+
 function isAllowedLocalOrigin(origin: string) {
   try {
-    const url = new URL(origin);
-    return (
-      (url.protocol === 'http:' || url.protocol === 'https:') &&
-      (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]')
-    );
+    return allowedCorsOrigins.has(new URL(origin).origin);
   } catch {
     return false;
   }
+}
+
+function hashString(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function hashBuffer(value: Buffer) {
+  return createHash('sha256').update(value).digest('hex');
 }
 
 function sendJson(
@@ -481,6 +843,7 @@ function sendJson(
   body: unknown,
   headers: Record<string, string | string[]> = {},
 ) {
+  response.setHeader('cache-control', 'no-store');
   for (const [key, value] of Object.entries(headers)) {
     response.setHeader(key, value);
   }
@@ -493,31 +856,71 @@ function sendJson(
   response.end(JSON.stringify(body));
 }
 
-function sendProblem(response: ServerResponse, status: number, title: string, detail?: string) {
-  sendJson(response, status, {
+function sendProblem(response: ServerResponse, status: number, title: string, detail?: string, code?: string) {
+  response.setHeader('cache-control', 'no-store');
+  if (status === 429) {
+    response.setHeader('retry-after', '60');
+  }
+  response.writeHead(status, { 'content-type': 'application/problem+json; charset=utf-8' });
+  response.end(JSON.stringify({
     type: 'about:blank',
     title,
     status,
     detail,
-  });
+    code: code ?? problemCode(title),
+    requestId: 'req_mock',
+  }));
 }
 
-async function sendSse(response: ServerResponse, stream: AsyncIterable<LlmStreamEvent>) {
+async function sendSse(response: ServerResponse, stream: AsyncIterable<ChatTurnEventMessage>) {
+  const iterator = stream[Symbol.asyncIterator]();
+  const first = await iterator.next();
   response.writeHead(200, {
-    'cache-control': 'no-cache',
+    'cache-control': 'no-cache, no-store',
     connection: 'keep-alive',
     'content-type': 'text/event-stream; charset=utf-8',
   });
   response.write(': keepalive\n\n');
-  for await (const event of stream) {
-    response.write(`data: ${JSON.stringify(event)}\n\n`);
+
+  if (!first.done) {
+    writeSseMessage(response, first.value);
+  }
+
+  while (true) {
+    const next = await iterator.next();
+    if (next.done) {
+      break;
+    }
+    writeSseMessage(response, next.value);
   }
   response.end();
 }
 
+function writeSseMessage(response: ServerResponse, message: ChatTurnEventMessage) {
+  if (message.id) {
+    response.write(`id: ${message.id}\n`);
+  }
+  if (message.event) {
+    response.write(`event: ${message.event}\n`);
+  }
+  if (message.retry !== undefined) {
+    response.write(`retry: ${message.retry}\n`);
+  }
+  response.write(`data: ${JSON.stringify(message.data)}\n\n`);
+}
+
+function problemCode(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'mock_error';
+}
+
 function problemFromError(error: unknown) {
   if (error instanceof MockApiError) {
-    return { status: error.status, title: titleForStatus(error.status), detail: error.message };
+    return {
+      code: error.code,
+      detail: error.status === 404 ? 'Resource not found.' : error.message,
+      status: error.status,
+      title: titleForStatus(error.status),
+    };
   }
   if (error instanceof SyntaxError) {
     return { status: 400, title: 'Bad request', detail: 'Invalid JSON body.' };
@@ -537,8 +940,14 @@ function titleForStatus(status: number) {
       return 'Not found';
     case 409:
       return 'Conflict';
+    case 410:
+      return 'Gone';
+    case 429:
+      return 'Rate limited';
     case 413:
       return 'Payload too large';
+    case 415:
+      return 'Unsupported media type';
     case 422:
       return 'Unprocessable entity';
     default:

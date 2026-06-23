@@ -1,0 +1,334 @@
+{
+  "baselineRef": "18ace36ff53f61284d225b25f0024c6fcef28e0e",
+  "operations": [
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "operationId": "registerUser"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "operationId": "loginUser"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "operationId": "logoutUser"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/me",
+      "operationId": "getCurrentUser"
+    },
+    {
+      "method": "GET",
+      "path": "/projects",
+      "operationId": "listProjects"
+    },
+    {
+      "method": "POST",
+      "path": "/projects",
+      "operationId": "createProject"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}",
+      "operationId": "getProject"
+    },
+    {
+      "method": "PATCH",
+      "path": "/projects/{projectId}",
+      "operationId": "updateProject"
+    },
+    {
+      "method": "DELETE",
+      "path": "/projects/{projectId}",
+      "operationId": "deleteProject"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}/books",
+      "operationId": "listBooks"
+    },
+    {
+      "method": "POST",
+      "path": "/projects/{projectId}/books",
+      "operationId": "createBook"
+    },
+    {
+      "method": "GET",
+      "path": "/books/{bookId}",
+      "operationId": "getBook"
+    },
+    {
+      "method": "PATCH",
+      "path": "/books/{bookId}",
+      "operationId": "updateBook"
+    },
+    {
+      "method": "DELETE",
+      "path": "/books/{bookId}",
+      "operationId": "deleteBook"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}/import-constraints",
+      "operationId": "getImportConstraints"
+    },
+    {
+      "method": "POST",
+      "path": "/projects/{projectId}/imports",
+      "operationId": "importBookFile"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}/indexing-jobs",
+      "operationId": "listIndexingJobs"
+    },
+    {
+      "method": "GET",
+      "path": "/indexing-jobs/{jobId}",
+      "operationId": "getIndexingJob"
+    },
+    {
+      "method": "POST",
+      "path": "/indexing-jobs/{jobId}/cancel",
+      "operationId": "cancelIndexingJob"
+    },
+    {
+      "method": "POST",
+      "path": "/books/{bookId}/exports",
+      "operationId": "createBookExport"
+    },
+    {
+      "method": "GET",
+      "path": "/export-jobs/{exportJobId}",
+      "operationId": "getExportJob"
+    },
+    {
+      "method": "GET",
+      "path": "/books/{bookId}/chapters",
+      "operationId": "listChapters"
+    },
+    {
+      "method": "POST",
+      "path": "/books/{bookId}/chapters",
+      "operationId": "createChapter"
+    },
+    {
+      "method": "GET",
+      "path": "/chapters/{chapterId}",
+      "operationId": "getChapter"
+    },
+    {
+      "method": "PATCH",
+      "path": "/chapters/{chapterId}",
+      "operationId": "updateChapter"
+    },
+    {
+      "method": "DELETE",
+      "path": "/chapters/{chapterId}",
+      "operationId": "deleteChapter"
+    },
+    {
+      "method": "POST",
+      "path": "/chapters/{chapterId}/publish",
+      "operationId": "publishChapter"
+    },
+    {
+      "method": "GET",
+      "path": "/chapters/{chapterId}/annotations",
+      "operationId": "listChapterAnnotations"
+    },
+    {
+      "method": "POST",
+      "path": "/chapters/{chapterId}/annotations",
+      "operationId": "createChapterAnnotation"
+    },
+    {
+      "method": "PATCH",
+      "path": "/annotations/{annotationId}",
+      "operationId": "updateReaderAnnotation"
+    },
+    {
+      "method": "DELETE",
+      "path": "/annotations/{annotationId}",
+      "operationId": "deleteReaderAnnotation"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}/search",
+      "operationId": "searchProject"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{projectId}/chats",
+      "operationId": "listChatSessions"
+    },
+    {
+      "method": "POST",
+      "path": "/projects/{projectId}/chats",
+      "operationId": "createChatSession"
+    },
+    {
+      "method": "GET",
+      "path": "/chats/{chatId}",
+      "operationId": "getChatSession"
+    },
+    {
+      "method": "PATCH",
+      "path": "/chats/{chatId}",
+      "operationId": "renameChatSession"
+    },
+    {
+      "method": "DELETE",
+      "path": "/chats/{chatId}",
+      "operationId": "deleteChatSession"
+    },
+    {
+      "method": "GET",
+      "path": "/chats/{chatId}/messages",
+      "operationId": "listChatMessages"
+    },
+    {
+      "method": "POST",
+      "path": "/chats/{chatId}/messages",
+      "operationId": "sendChatMessage"
+    },
+    {
+      "method": "GET",
+      "path": "/chat-artifacts/{artifactId}",
+      "operationId": "getChatArtifact"
+    },
+    {
+      "method": "GET",
+      "path": "/chapters/{chapterId}/agent-suggestions",
+      "operationId": "listAgentSuggestions"
+    },
+    {
+      "method": "POST",
+      "path": "/chapters/{chapterId}/agent-suggestions",
+      "operationId": "requestAgentSuggestion"
+    },
+    {
+      "method": "GET",
+      "path": "/agent-suggestions/{suggestionId}",
+      "operationId": "getAgentSuggestion"
+    },
+    {
+      "method": "POST",
+      "path": "/agent-suggestions/{suggestionId}/approve",
+      "operationId": "approveAgentSuggestion"
+    },
+    {
+      "method": "POST",
+      "path": "/agent-suggestions/{suggestionId}/reject",
+      "operationId": "rejectAgentSuggestion"
+    }
+  ],
+  "schemas": [
+    "AgentDiffLocator",
+    "AgentOptions",
+    "AgentSuggestion",
+    "AgentSuggestionActionResult",
+    "AgentSuggestionKind",
+    "AgentSuggestionList",
+    "AgentSuggestionStatus",
+    "AgentSuggestionsReadyChatTrigger",
+    "AgentTask",
+    "ApproveAgentSuggestionRequest",
+    "AuthSession",
+    "Book",
+    "BookList",
+    "BookStatus",
+    "BookmarkAnnotation",
+    "Chapter",
+    "ChapterList",
+    "ChapterNavigation",
+    "ChapterNavigationItem",
+    "ChapterParagraph",
+    "ChapterParagraphInput",
+    "ChapterStatus",
+    "ChapterSummary",
+    "ChapterViewMode",
+    "ChatArtifact",
+    "ChatArtifactKind",
+    "ChatArtifactStatus",
+    "ChatMessage",
+    "ChatMessageList",
+    "ChatMessagePart",
+    "ChatMessagePartStatus",
+    "ChatMessagePartType",
+    "ChatRole",
+    "ChatSession",
+    "ChatSessionList",
+    "ChatTrigger",
+    "ChatTriggerKind",
+    "ChatTurn",
+    "CreateBookRequest",
+    "CreateBookmarkAnnotationRequest",
+    "CreateChapterRequest",
+    "CreateChatMessageRequest",
+    "CreateChatSessionRequest",
+    "CreateExportRequest",
+    "CreateHighlightAnnotationRequest",
+    "CreateNoteAnnotationRequest",
+    "CreateProjectRequest",
+    "CreateReaderAnnotationRequest",
+    "DateTime",
+    "DiffHunk",
+    "ExportFormat",
+    "ExportJob",
+    "HighlightAnnotation",
+    "Id",
+    "ImportBookRequest",
+    "ImportConstraints",
+    "IndexingJob",
+    "IndexingJobList",
+    "IndexingJobStage",
+    "IndexingJobStatus",
+    "IndexingStatus",
+    "IndexingSummary",
+    "LlmCompletedEvent",
+    "LlmErrorEvent",
+    "LlmReasoningDeltaEvent",
+    "LlmStreamEvent",
+    "LlmStreamEventType",
+    "LlmTextDeltaEvent",
+    "LlmToolCallEvent",
+    "LlmToolResultEvent",
+    "LoginRequest",
+    "NoteAnnotation",
+    "PageMeta",
+    "Problem",
+    "Project",
+    "ProjectList",
+    "PublishChapterRequest",
+    "ReaderAnnotation",
+    "ReaderAnnotationBase",
+    "ReaderAnnotationKind",
+    "ReaderAnnotationList",
+    "ReaderAnnotationStatus",
+    "ReaderLocator",
+    "ReaderReference",
+    "ReaderReferenceLocator",
+    "ReaderReferencesChatTrigger",
+    "RegisterRequest",
+    "RequestAgentSuggestionRequest",
+    "SearchResponse",
+    "SearchResult",
+    "SearchScope",
+    "TextRange",
+    "UpdateBookRequest",
+    "UpdateBookmarkAnnotationRequest",
+    "UpdateChapterRequest",
+    "UpdateChatSessionRequest",
+    "UpdateHighlightAnnotationRequest",
+    "UpdateNoteAnnotationRequest",
+    "UpdateProjectRequest",
+    "UpdateReaderAnnotationRequest",
+    "User",
+    "ValidationError"
+  ]
+}

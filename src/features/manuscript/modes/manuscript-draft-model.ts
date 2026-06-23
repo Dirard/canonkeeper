@@ -5,7 +5,6 @@ export type DraftChapterListItem = ChapterListItem;
 export type ChapterParagraph = Chapter['paragraphs'][number];
 export type ChapterParagraphInput = {
   id?: string;
-  clientKey?: string;
   order: number;
   kind: ChapterParagraph['kind'];
   text: string;
@@ -23,8 +22,7 @@ export function chapterToDraftText(chapter: Chapter) {
 /**
  * Builds the draft save payload while preserving existing server paragraph IDs.
  * Existing paragraphs reuse their `id` (matched by content, then position); genuinely
- * new paragraphs omit `id` and carry a stable `clientKey` so the backend can return a
- * server ID without the frontend overwriting unrelated paragraphs.
+ * new paragraphs omit `id` until the backend assigns stable paragraph IDs.
  */
 export function toParagraphInputs(
   text: string,
@@ -50,7 +48,7 @@ export function toParagraphInputs(
     kind: 'heading',
     text: `Глава ${chapterNumber}. ${title}`,
     markdown: `## Глава ${chapterNumber}. ${title}`,
-    ...(existingHeading ? { id: existingHeading.id } : { clientKey: 'heading' }),
+    ...(existingHeading ? { id: existingHeading.id } : {}),
   };
 
   const bodyInputs = body.map((paragraph, index): ChapterParagraphInput => {
@@ -60,7 +58,7 @@ export function toParagraphInputs(
       kind: paragraph.kind,
       text: paragraph.text,
       markdown: paragraph.markdown,
-      ...(matched ? { id: matched.id } : { clientKey: `draft-${index + 2}` }),
+      ...(matched ? { id: matched.id } : {}),
     };
   });
 

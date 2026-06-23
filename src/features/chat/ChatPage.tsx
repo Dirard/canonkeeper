@@ -28,11 +28,14 @@ import type {
   ChatMessage,
   ChatSession,
   Chapter,
+  Project,
+  ReaderReferenceLocator,
   ReaderLocator,
   SearchScope,
 } from '../../entities/chat/api';
+import { createIdempotencyKey } from '../../entities/chat/api';
 import { isApiStatusFailure, isNetworkFailure, publicApiErrorMessage } from '../../entities/api-errors';
-import { extractArtifactId, getArtifactTriggerIds, sameLocator, stripInlineTriggers } from '../../entities/chat/model';
+import { getArtifactReferenceIds, sameLocator } from '../../entities/chat/model';
 import type { AppRoute } from '../../shared/navigation/app-route';
 import { formatProjectMeta, searchResultKindLabel } from '../../ui/copy';
 import { Overlay } from '../../ui/Overlay';
@@ -118,6 +121,8 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const readerReturnRef = useRef<HTMLElement | null>(null);
   const streamAbortRef = useRef<AbortController | null>(null);
+  const streamJobRef = useRef<string | null>(null);
+  const streamRunRef = useRef(0);
 
   const workspaceQuery = useChatWorkspaceQuery(api, {
     chatId: activeChatId || requestedChatId,
@@ -126,6 +131,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   const workspace = workspaceQuery.data ?? emptyChatWorkspace;
   const projects = workspace.projects;
   const activeProject = workspace.activeProject;
+  const canWriteChat = canMutateProject(activeProject);
   const sessions = workspace.sessions;
   const activeChat = workspace.activeChat;
   const visibleActiveChatId = activeChatId || workspace.activeChatId;
@@ -196,7 +202,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
     setRenameValue(workspace.activeChat?.title ?? '');
     setMessages(workspace.messages);
     setArtifactsById(workspace.artifactsById);
-    setSelectedLocator((current) => current ?? locatorFromRoute(workspace.activeProject, requestedBookId, requestedChapterId, requestedParagraphId) ?? workspace.firstLocator);
+    setSelectedLocator(locatorFromRoute(workspace.activeProject, requestedBookId, requestedChapterId, requestedParagraphId) ?? workspace.firstLocator);
 
     if (workspace.artifactErrors[0]) {
       setNotice(formatError(workspace.artifactErrors[0], 'Источник временно недоступен.'));
@@ -206,6 +212,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   useEffect(() => {
     return () => {
       streamAbortRef.current?.abort();
+      streamRunRef.current += 1;
     };
   }, []);
 
@@ -222,7 +229,9 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   }, [messages, streamText]);
 
   function selectSession(chatId: string, options?: { preserveRoute?: boolean }) {
+    void stopActiveStream({ clearStream: true });
     setActiveChatId(chatId);
+    setSelectedLocator(null);
     setStreamStatus('idle');
     setStreamText('');
     setStreamEvents([]);
@@ -233,6 +242,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
 
   async function createSession() {
     if (!activeProject) {
+      return;
+    }
+    if (!canWriteChat) {
+      setNotice('Действия с чатом доступны редактору, администратору или владельцу проекта.');
       return;
     }
     setNotice('');
@@ -248,6 +261,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   async function createAssistanceChat() {
     if (!activeProject) {
       setNotice('Проект загружается.');
+      return;
+    }
+    if (!canWriteChat) {
+      setNotice('Действия с чатом доступны редактору, администратору или владельцу проекта.');
       return;
     }
     setNotice('');
@@ -280,6 +297,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   }
 
   async function approveSuggestion(suggestion: AgentSuggestion) {
+    if (!canWriteChat) {
+      setNotice('Агентские правки доступны редактору, администратору или владельцу проекта.');
+      return;
+    }
     setAssistanceAction({ id: suggestion.id, kind: 'approve' });
     setNotice('Применяем предложение...');
     try {
@@ -296,10 +317,17 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   }
 
   async function rejectSuggestion(suggestion: AgentSuggestion) {
+    if (!canWriteChat) {
+      setNotice('Агентские правки доступны редактору, администратору или владельцу проекта.');
+      return;
+    }
     setAssistanceAction({ id: suggestion.id, kind: 'reject' });
     setNotice('Отклоняем предложение...');
     try {
-      await rejectAssistanceMutation.mutateAsync(suggestion.id);
+      await rejectAssistanceMutation.mutateAsync({
+        expectedChapterRevision: assistance.chapter?.draftRevision ?? suggestion.baseChapterRevision,
+        suggestionId: suggestion.id,
+      });
       setNotice('Предложение отклонено.');
     } catch (nextError) {
       setNotice(formatError(nextError, 'Не удалось отклонить предложение.'));
@@ -313,6 +341,11 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
     if (!activeChat || renameValue.trim().length === 0) {
       return;
     }
+    if (!canWriteChat) {
+      setNotice('Действия с чатом доступны редактору, администратору или владельцу проекта.');
+      closeModal();
+      return;
+    }
     try {
       await renameSessionMutation.mutateAsync({ chatId: activeChat.id, title: renameValue.trim() });
       closeModal();
@@ -323,6 +356,11 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
 
   async function deleteSession() {
     if (!activeChat) {
+      return;
+    }
+    if (!canWriteChat) {
+      setNotice('Действия с чатом доступны редактору, администратору или владельцу проекта.');
+      closeModal();
       return;
     }
     try {
@@ -340,13 +378,46 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
     }
   }
 
-  function cancelStream() {
-    streamAbortRef.current?.abort();
+  async function stopActiveStream({
+    clearStream = false,
+    showCancelError = false,
+    stoppedNotice,
+  }: {
+    clearStream?: boolean;
+    showCancelError?: boolean;
+    stoppedNotice?: string;
+  } = {}) {
+    const jobId = streamJobRef.current;
+    const controller = streamAbortRef.current;
+    if (!controller && !jobId) {
+      return;
+    }
+    streamRunRef.current += 1;
+    controller?.abort();
     streamAbortRef.current = null;
-    setStreamStatus('idle');
-    setStreamText('');
-    setStreamEvents([]);
-    setNotice('Ответ остановлен.');
+    streamJobRef.current = null;
+    if (clearStream) {
+      setStreamStatus('idle');
+      setStreamText('');
+      setStreamEvents([]);
+    }
+    if (stoppedNotice) {
+      setNotice(stoppedNotice);
+    }
+    if (jobId) {
+      try {
+        await api.cancelJob(jobId);
+      } catch (nextError) {
+        if (showCancelError) {
+          setStreamStatus('error');
+          setNotice(formatError(nextError, 'Не удалось остановить ответ.'));
+        }
+      }
+    }
+  }
+
+  async function cancelStream() {
+    await stopActiveStream({ clearStream: true, showCancelError: true, stoppedNotice: 'Ответ остановлен.' });
     composerRef.current?.focus();
   }
 
@@ -354,6 +425,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
     event.preventDefault();
     const content = composerValue.trim();
     if (!content || !activeChat || streamStatus === 'pending' || streamStatus === 'streaming') {
+      return;
+    }
+    if (!canWriteChat) {
+      setNotice('Отправка сообщений доступна редактору, администратору или владельцу проекта.');
       return;
     }
 
@@ -367,38 +442,53 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
       role: 'user',
       content,
       parts: [{ type: 'text', text: content, sequence: 1, status: 'completed' }],
-      triggers: [],
+      references: [],
       createdAt: new Date().toISOString(),
     };
     setMessages((current) => [...current, optimisticMessage]);
-    streamAbortRef.current?.abort();
+    void stopActiveStream();
+    streamJobRef.current = null;
     const streamAbortController = new AbortController();
     streamAbortRef.current = streamAbortController;
+    const streamRunId = streamRunRef.current + 1;
+    streamRunRef.current = streamRunId;
+    let activeJobId: string | null = null;
+    let activeTurnId: string | null = null;
 
     try {
-      const stream = api.sendChatMessage(
+      const contextLocator = selectedLocator && selectedLocator.projectId === activeProject?.id ? toReaderReferenceLocator(selectedLocator) : null;
+      const turn = await api.createChatTurn(
         activeChat.id,
         {
           content,
-          stream: true,
-          ...(selectedLocator ? { contextLocators: [selectedLocator], readerContext: selectedLocator } : {}),
+          contextLocators: contextLocator ? [contextLocator] : [],
         },
-        { signal: streamAbortController.signal },
+        { idempotencyKey: createIdempotencyKey('createChatTurn'), signal: streamAbortController.signal },
       );
-      for await (const eventChunk of stream) {
-        if (eventChunk.type === 'reasoning_delta') {
-          setStreamStatus('streaming');
-          setStreamEvents((current) => appendStreamEvent(current, eventChunk.delta));
+      activeJobId = turn.jobId;
+      activeTurnId = turn.turnId;
+      streamJobRef.current = turn.jobId;
+      const stream = api.streamChatTurnEvents(turn.turnId, { signal: streamAbortController.signal });
+      for await (const eventMessage of stream) {
+        if (streamRunRef.current !== streamRunId) {
+          return;
         }
-        if (eventChunk.type === 'text_delta') {
+        const eventChunk = eventMessage.data;
+        if (eventChunk.type === 'job.progress') {
           setStreamStatus('streaming');
-          setStreamText((current) => stripInlineTriggers(`${current}${eventChunk.delta}`));
-          const artifactId = extractArtifactId(eventChunk.delta);
+          setStreamEvents((current) => appendStreamEvent(current, stringEventData(eventChunk.data, 'label') ?? 'Готовим ответ'));
+        }
+        if (eventChunk.type === 'assistant.delta') {
+          setStreamStatus('streaming');
+          setStreamText((current) => `${current}${stringEventData(eventChunk.data, 'text') ?? ''}`);
+        }
+        if (eventChunk.type === 'artifact.ready') {
+          const artifactId = stringEventData(eventChunk.data, 'artifactId');
           if (artifactId) {
             const hydrated = await hydrateChatArtifacts(api, [
               {
                 ...optimisticMessage,
-                triggers: [{ marker: eventChunk.delta, kind: 'reader_references', artifactId }],
+                references: [{ kind: 'reader_reference_artifact', artifactId }],
               },
             ]);
             setArtifactsById((current) => ({ ...current, ...hydrated.artifactsById }));
@@ -408,15 +498,43 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
             }
           }
         }
-        if (eventChunk.type === 'tool_call' || eventChunk.type === 'tool_result') {
-          setStreamEvents((current) => appendStreamEvent(current, `${eventChunk.toolName}: ${eventChunk.delta ?? ''}`));
+        if (eventChunk.type === 'artifact.failed' || eventChunk.type === 'suggestions.failed') {
+          setStreamEvents((current) => appendStreamEvent(current, stringEventData(eventChunk.data, 'message') ?? 'Не удалось завершить шаг'));
+        }
+        if (eventChunk.type === 'suggestions.ready') {
+          setStreamEvents((current) => appendStreamEvent(current, 'Предложения по черновику обновлены.'));
+          if (hasAssistanceContext) {
+            void assistanceQuery.refetch();
+          }
+        }
+        if (eventChunk.type === 'turn.failed') {
+          const message = stringEventData(eventChunk.data, 'message') ?? 'Не удалось завершить ответ.';
+          setStreamEvents((current) => appendStreamEvent(current, message));
+          setStreamStatus('error');
+          setNotice(message);
+          composerRef.current?.focus();
+          return;
+        }
+        if (eventChunk.type === 'turn.canceled') {
+          const reason = stringEventData(eventChunk.data, 'reason') ?? 'Ответ остановлен.';
+          setStreamEvents((current) => appendStreamEvent(current, reason));
+          setStreamStatus('idle');
+          setNotice(reason);
+          composerRef.current?.focus();
+          return;
         }
       }
 
+      if (streamRunRef.current !== streamRunId) {
+        return;
+      }
       const refreshed = await refreshMessagesMutation.mutateAsync(activeChat.id);
+      if (streamRunRef.current !== streamRunId) {
+        return;
+      }
       setMessages(refreshed.messages);
       setArtifactsById(refreshed.artifactsById);
-      setSelectedLocator((current) => current ?? refreshed.firstLocator);
+      setSelectedLocator((current) => (current?.projectId === activeProject?.id ? current : refreshed.firstLocator));
       if (refreshed.artifactErrors[0]) {
         setNotice(formatError(refreshed.artifactErrors[0], 'Источник временно недоступен.'));
       }
@@ -426,12 +544,41 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
       if (isAbortError(nextError)) {
         return;
       }
+      if (streamRunRef.current !== streamRunId) {
+        return;
+      }
+      if (activeTurnId && isApiStatusFailure(nextError) && nextError.status === 410) {
+        try {
+          const snapshot = await api.getChatTurn(activeTurnId);
+          if (streamRunRef.current !== streamRunId) {
+            return;
+          }
+          const artifacts = Object.fromEntries(snapshot.artifacts.map((artifact) => [artifact.id, artifact]));
+          setMessages(snapshot.messages);
+          setArtifactsById(artifacts);
+          setSelectedLocator((current) => (current?.projectId === activeProject?.id ? current : snapshot.artifacts[0]?.readerReferences?.[0]?.locator ?? null));
+          if (snapshot.suggestions.length > 0 && hasAssistanceContext) {
+            void assistanceQuery.refetch();
+          }
+          setStreamStatus('idle');
+          composerRef.current?.focus();
+          return;
+        } catch (recoveryError) {
+          setStreamStatus('error');
+          setNotice(formatError(recoveryError, 'Не удалось восстановить ответ. Обновите чат.'));
+          composerRef.current?.focus();
+          return;
+        }
+      }
       setStreamStatus('error');
       setNotice(formatError(nextError, 'Не удалось завершить ответ.'));
       composerRef.current?.focus();
     } finally {
-      if (streamAbortRef.current === streamAbortController) {
+      if (streamRunRef.current === streamRunId && streamAbortRef.current === streamAbortController) {
         streamAbortRef.current = null;
+      }
+      if (streamRunRef.current === streamRunId && streamJobRef.current === activeJobId) {
+        streamJobRef.current = null;
       }
     }
   }
@@ -462,8 +609,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
   }
 
   async function selectProject(projectId: string) {
+    void stopActiveStream({ clearStream: true });
     setSelectedProjectId(projectId);
     setActiveChatId('');
+    setSelectedLocator(null);
     setProjectMenuOpen(false);
     navigate('/chat', { projectId });
   }
@@ -625,6 +774,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
         <ProjectSidebar
           active="chat"
           activeChatId={visibleActiveChatId}
+          canCreateChat={canWriteChat}
           onChat={() => undefined}
           onCreateChat={createSession}
           onManuscript={navigateToManuscript}
@@ -654,10 +804,10 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
               <div className={styles.chatHeaderInner}>
                 <h1>{title}</h1>
                 <div className={styles.chatHeaderActions}>
-                  <button aria-label="Переименовать чат" className={styles.iconButton} onClick={() => openModal('rename-chat')} type="button">
+                  <button aria-label="Переименовать чат" className={styles.iconButton} disabled={!activeChat || !canWriteChat} onClick={() => openModal('rename-chat')} type="button">
                     <Pencil aria-hidden="true" size={18} />
                   </button>
-                  <button aria-label="Удалить чат" className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => openModal('delete-chat')} type="button">
+                  <button aria-label="Удалить чат" className={`${styles.iconButton} ${styles.deleteIcon}`} disabled={!activeChat || !canWriteChat} onClick={() => openModal('delete-chat')} type="button">
                     <Trash2 aria-hidden="true" size={18} />
                   </button>
                 </div>
@@ -667,14 +817,23 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
             <div className={styles.thread} data-proof="chat-thread" ref={threadRef}>
               <div className={styles.threadInner}>
                 {workspaceStatus === 'loading' || threadStatus === 'loading' ? <p className={styles.stateBox}>Загружаем чат...</p> : null}
-                {workspaceStatus === 'empty' || sessionStatus === 'empty' ? <p className={styles.stateBox}>В проекте пока нет чатов.</p> : null}
+                {workspaceStatus === 'empty' ? <p className={styles.stateBox}>У вас пока нет проектов.</p> : null}
+                {workspaceStatus === 'ready' && sessionStatus === 'empty' ? (
+                  <div className={styles.stateBox}>
+                    <p>В проекте пока нет чатов.</p>
+                    <button className={styles.primaryButton} disabled={!canWriteChat} onClick={() => void createSession()} type="button">
+                      Создать чат
+                    </button>
+                  </div>
+                ) : null}
                 {workspaceStatus === 'error' || threadStatus === 'error' ? <p className={styles.stateBox}>{error}</p> : null}
-                {threadStatus === 'empty' && workspaceStatus === 'ready' ? <p className={styles.stateBox}>В этом чате пока нет сообщений.</p> : null}
+                {threadStatus === 'empty' && workspaceStatus === 'ready' && sessionStatus === 'ready' ? <p className={styles.stateBox}>В этом чате пока нет сообщений.</p> : null}
                 {notice ? <p className={styles.stateBox}>{notice}</p> : null}
                 {hasAssistanceContext ? (
                   <ChatAssistancePanel
                     action={assistanceAction}
                     assistance={assistance}
+                    canWriteChat={canWriteChat}
                     error={assistanceError}
                     onApprove={(suggestion) => void approveSuggestion(suggestion)}
                     onCreateChat={() => void createAssistanceChat()}
@@ -695,7 +854,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
 
                 {streamStatus === 'pending' || streamStatus === 'streaming' || streamStatus === 'error' ? (
                   <div className={styles.message} aria-live="polite">
-                    <p className={styles.assistantMeta}>{streamStatus === 'error' ? 'Ответ остановлен' : 'Ответ формируется'}</p>
+                    <p className={styles.assistantMeta}>{streamStatus === 'error' ? 'Ответ не завершен' : 'Ответ формируется'}</p>
                     {streamEvents.map((item, index) => (
                       <p className={styles.activityLine} key={`${index}-${item}`}>
                         {item}
@@ -711,8 +870,9 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
               <form className={styles.composerForm} onSubmit={sendMessage}>
                 <textarea
                   aria-label="Сообщение"
+                  disabled={!activeChat || !canWriteChat}
                   onChange={(event) => setComposerValue(event.target.value)}
-                  placeholder="Задайте свой вопрос..."
+                  placeholder={!canWriteChat ? 'У вас доступ только для чтения' : activeChat ? 'Задайте свой вопрос...' : 'Создайте чат, чтобы начать диалог'}
                   ref={composerRef}
                   value={composerValue}
                 />
@@ -721,7 +881,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
                     <Square aria-hidden="true" size={17} />
                   </button>
                 ) : (
-                  <button aria-label="Отправить" className={styles.sendButton} disabled={!composerValue.trim()} type="submit">
+                  <button aria-label="Отправить" className={styles.sendButton} disabled={!activeChat || !canWriteChat || !composerValue.trim()} type="submit">
                     <Send aria-hidden="true" size={19} />
                   </button>
                 )}
@@ -764,6 +924,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
       {menuPresence.mounted ? (
         <MobileMenu
           activeChatId={visibleActiveChatId}
+          canCreateChat={canWriteChat}
           onClose={closeMobileMenu}
           onCreateSession={createSession}
           onNavigateChat={() => closeMobileMenu()}
@@ -782,6 +943,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
 
       {actionsPresence.mounted ? (
         <ActionsMenu
+          canWriteChat={canWriteChat}
           onClose={closeMobileActions}
           onDelete={() => openModal('delete-chat')}
           onRename={() => openModal('rename-chat')}
@@ -819,6 +981,7 @@ export function ChatPage({ api, onLogout, navigate, route, userName }: ChatPageP
 function ChatAssistancePanel({
   action,
   assistance,
+  canWriteChat,
   error,
   onApprove,
   onCreateChat,
@@ -827,6 +990,7 @@ function ChatAssistancePanel({
 }: {
   action: { id: string; kind: 'approve' | 'reject' } | null;
   assistance: ChatAssistanceData;
+  canWriteChat: boolean;
   error: string;
   onApprove: (suggestion: AgentSuggestion) => void;
   onCreateChat: () => void;
@@ -842,7 +1006,7 @@ function ChatAssistancePanel({
           <p className={styles.assistantMeta}>Черновик</p>
           <h2>{chapterLabel}</h2>
         </div>
-        <button className={styles.secondaryButton} onClick={onCreateChat} type="button">
+        <button className={styles.secondaryButton} disabled={!canWriteChat} onClick={onCreateChat} type="button">
           <MessageSquare aria-hidden="true" size={15} />
           Создать чат
         </button>
@@ -868,7 +1032,7 @@ function ChatAssistancePanel({
             <div className={styles.assistanceActions}>
               <button
                 className={styles.secondaryButton}
-                disabled={Boolean(action) || suggestion.status !== 'pending'}
+                disabled={!canWriteChat || Boolean(action) || suggestion.status !== 'pending'}
                 onClick={() => onReject(suggestion)}
                 type="button"
               >
@@ -877,7 +1041,7 @@ function ChatAssistancePanel({
               </button>
               <button
                 className={styles.primaryButton}
-                disabled={Boolean(action) || suggestion.status !== 'pending'}
+                disabled={!canWriteChat || Boolean(action) || suggestion.status !== 'pending'}
                 onClick={() => onApprove(suggestion)}
                 type="button"
               >
@@ -919,7 +1083,7 @@ function MessageBlock({
   const { reasoningParts, textParts, toolParts } = partitionAssistantParts(message.parts);
   const reasoningLabel = reasoningDurationLabel(reasoningParts);
   const visibleText = assistantVisibleText(textParts);
-  const artifactIds = getArtifactTriggerIds(message);
+  const artifactIds = getArtifactReferenceIds(message);
 
   return (
     <div className={styles.message}>
@@ -946,8 +1110,8 @@ function MessageBlock({
         <div className={styles.chipRow}>
           {toolParts.map((part) => (
             <span className={styles.chip} key={`${message.id}-tool-${part.sequence ?? part.text}`}>
-              {part.toolName === 'search_corpus' || part.label?.includes('Поиск') ? <Search aria-hidden="true" size={14} /> : null}
-              {part.toolName === 'open_chapter' || part.label?.includes('Открыл') ? <BookOpen aria-hidden="true" size={14} /> : null}
+              {part.text.includes('Поиск') ? <Search aria-hidden="true" size={14} /> : null}
+              {part.text.includes('Открыл') ? <BookOpen aria-hidden="true" size={14} /> : null}
               {toolChipLabel(part)}
             </span>
           ))}
@@ -999,7 +1163,7 @@ function SearchPanel({
   setSearchTerm: (value: string) => void;
   state: PresenceStatus;
 }) {
-  const placeholder = searchScope === 'materials' ? 'Поиск материалов проекта' : 'Глобальный поиск';
+  const placeholder = searchScope === 'annotations' ? 'Поиск заметок проекта' : 'Глобальный поиск';
 
   return (
     <section
@@ -1107,6 +1271,7 @@ function ModalLayer({
 
 function MobileMenu({
   activeChatId,
+  canCreateChat,
   onClose,
   onCreateSession,
   onNavigateChat,
@@ -1119,6 +1284,7 @@ function MobileMenu({
   state,
 }: {
   activeChatId: string;
+  canCreateChat: boolean;
   onClose: () => void;
   onCreateSession: () => void;
   onNavigateChat: () => void;
@@ -1144,6 +1310,7 @@ function MobileMenu({
             <ProjectSidebar
               active="chat"
               activeChatId={activeChatId}
+              canCreateChat={canCreateChat}
               onChat={onNavigateChat}
               onCreateChat={onCreateSession}
               onManuscript={onNavigateManuscript}
@@ -1162,11 +1329,13 @@ function MobileMenu({
 }
 
 function ActionsMenu({
+  canWriteChat,
   onClose,
   onDelete,
   onRename,
   state,
 }: {
+  canWriteChat: boolean;
   onClose: () => void;
   onDelete: () => void;
   onRename: () => void;
@@ -1177,11 +1346,11 @@ function ActionsMenu({
       <div className={styles.layer} data-overlay-scrim="" data-state={state}>
         <Overlay kind="menu" label="Действия чата" onDismiss={onClose} state={state}>
           <div className={styles.mobileActionsPanel}>
-          <button className={styles.menuItem} onClick={onRename} type="button">
+          <button className={styles.menuItem} disabled={!canWriteChat} onClick={onRename} type="button">
             <Pencil aria-hidden="true" size={17} />
             Переименовать
           </button>
-          <button className={styles.menuDangerItem} onClick={onDelete} type="button">
+          <button className={styles.menuDangerItem} disabled={!canWriteChat} onClick={onDelete} type="button">
             <Trash2 aria-hidden="true" size={17} />
             Удалить
           </button>
@@ -1211,7 +1380,7 @@ function locatorFromRoute(
     chapterId,
     paragraphId: paragraphId || null,
     projectId: project.id,
-    source: 'manual',
+    revision: 1,
     targetView: 'draft',
   };
 }
@@ -1259,6 +1428,23 @@ function isAbortError(error: unknown) {
     return cause instanceof DOMException && cause.name === 'AbortError';
   }
   return false;
+}
+
+function stringEventData(data: Record<string, unknown>, key: string) {
+  const value = data[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function toReaderReferenceLocator(locator: ReaderLocator): ReaderReferenceLocator | null {
+  if (!locator.paragraphId) {
+    return null;
+  }
+  return { ...locator, paragraphId: locator.paragraphId };
+}
+
+function canMutateProject(project: Project | null) {
+  const role = project?.currentMembership.role;
+  return role === 'owner' || role === 'admin' || role === 'editor';
 }
 
 function formatError(error: unknown, fallback: string) {

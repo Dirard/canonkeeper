@@ -16,6 +16,23 @@ function problem(status: number, title: string) {
   return HttpResponse.json({ detail: title, status, title, type: 'about:blank' }, { status });
 }
 
+function cancelingChatJob(jobId: string) {
+  return {
+    id: jobId,
+    kind: 'chat_turn',
+    status: 'canceling',
+    progress: 0.2,
+    subject: { type: 'chat_turn', id: 'turn-canceling', projectId: 'project-white-port' },
+    result: { type: 'chat_turn', chatId: 'chat-white-port', turnId: 'turn-canceling', userMessageId: 'message-user-canceling', artifactId: null },
+    error: null,
+    canCancel: false,
+    expiresAt: null,
+    createdAt: '2026-06-16T05:00:00.000Z',
+    updatedAt: '2026-06-16T05:00:00.000Z',
+    links: { self: `/api/v1/jobs/${jobId}`, cancel: null, result: null },
+  };
+}
+
 function createTestQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -25,12 +42,19 @@ function createTestQueryClient() {
   });
 }
 
+async function authenticatedFetch(request: Request) {
+  const headers = new Headers(request.headers);
+  headers.set('cookie', 'ck_session=mock-session');
+  headers.set('origin', 'http://localhost:3000');
+  return fetch(request, { headers });
+}
+
 function renderChat(search = '', options: Parameters<typeof createChatHandlers>[0] = {}, extraHandlers: RequestHandler[] = []) {
   mswServer.use(...createChatHandlers(options));
   if (extraHandlers.length > 0) {
     mswServer.use(...extraHandlers);
   }
-  const api = createCanonKeeperApiClient({ baseUrl: mswApiBaseUrl });
+  const api = createCanonKeeperApiClient({ baseUrl: mswApiBaseUrl, fetch: authenticatedFetch });
   const navigate = vi.fn();
   const onLogout = vi.fn();
   const queryClient = createTestQueryClient();
@@ -77,6 +101,18 @@ describe('ChatPage', () => {
     expect(screen.queryByRole('button', { name: 'Создать чат' })).toBeNull();
   });
 
+  it('keeps project viewer chat access read-only', async () => {
+    renderChat('', { scenario: { preset: 'normal', actorRole: 'viewer' } });
+
+    await screen.findByRole('heading', { name: /Пожар в Белом порту/ });
+    expect(screen.getByRole('button', { name: 'Новый чат' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Переименовать чат' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Удалить чат' })).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText('Сообщение')).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText('Сообщение')).toHaveProperty('placeholder', 'У вас доступ только для чтения');
+    expect(screen.getByRole('button', { name: 'Отправить' })).toHaveProperty('disabled', true);
+  });
+
   it('routes the desktop manuscript nav to the shipped manuscript surface', async () => {
     const { navigate } = renderChat();
 
@@ -117,7 +153,157 @@ describe('ChatPage', () => {
     expect((await screen.findAllByText(/Мара первой заметила дым/)).length).toBeGreaterThan(0);
   });
 
-  it('opens exact reader targets from chat source cards and material search results', async () => {
+  it('cancels the backend chat job when stopping an active stream', async () => {
+    const cancelRequests: string[] = [];
+    const encoder = new TextEncoder();
+    renderChat('', {}, [
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId/events`, () => {
+        const progressEvent = {
+          eventId: 'evt_waiting',
+          sequence: 1,
+          turnId: 'turn-waiting',
+          jobId: 'chat-job-waiting',
+          type: 'job.progress',
+          data: { progress: 0.2, label: 'Задерживаем ответ' },
+        };
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(progressEvent)}\n\n`));
+            },
+          }),
+          { headers: { 'content-type': 'text/event-stream' } },
+        );
+      }),
+      http.post(`${mswApiBaseUrl}/jobs/:jobId/cancel`, ({ params }) => {
+        const jobId = String(params.jobId);
+        cancelRequests.push(jobId);
+        return HttpResponse.json(cancelingChatJob(jobId));
+      }),
+    ]);
+
+    const input = await screen.findByLabelText('Сообщение');
+    fireEvent.change(input, { target: { value: 'Останови этот ответ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    expect(await screen.findByText('Задерживаем ответ')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить ответ' }));
+
+    await waitFor(() => expect(cancelRequests).toHaveLength(1));
+    expect(cancelRequests[0]).toMatch(/^chat-job-/);
+    expect(await screen.findByText('Ответ остановлен.')).toBeTruthy();
+  });
+
+  it('cancels an active stream before switching to another chat', async () => {
+    const cancelRequests: string[] = [];
+    const encoder = new TextEncoder();
+    renderChat('', {}, [
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId/events`, () => {
+        const progressEvent = {
+          eventId: 'evt_waiting_switch',
+          sequence: 1,
+          turnId: 'turn-waiting-switch',
+          jobId: 'chat-job-waiting-switch',
+          type: 'job.progress',
+          data: { progress: 0.2, label: 'Задерживаем ответ' },
+        };
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(progressEvent)}\n\n`));
+            },
+          }),
+          { headers: { 'content-type': 'text/event-stream' } },
+        );
+      }),
+      http.post(`${mswApiBaseUrl}/jobs/:jobId/cancel`, ({ params }) => {
+        const jobId = String(params.jobId);
+        cancelRequests.push(jobId);
+        return HttpResponse.json(cancelingChatJob(jobId));
+      }),
+    ]);
+
+    const input = await screen.findByLabelText('Сообщение');
+    fireEvent.change(input, { target: { value: 'Останови перед переключением' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    expect(await screen.findByText('Задерживаем ответ')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Упоминания Мары/ }));
+
+    await waitFor(() => expect(cancelRequests).toHaveLength(1));
+    expect(await screen.findByText(/Мара появляется в главах/)).toBeTruthy();
+    expect(screen.queryByText('Задерживаем ответ')).toBeNull();
+  });
+
+  it('recovers an expired chat stream from the turn snapshot', async () => {
+    renderChat('', {}, [
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId/events`, () => problem(410, 'Chat turn event log expired.')),
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId`, ({ params }) => {
+        const turnId = String(params.turnId);
+        const chatId = 'chat-white-port';
+        return HttpResponse.json({
+          turnId,
+          job: {
+            ...cancelingChatJob('chat-job-recovered'),
+            id: 'chat-job-recovered',
+            status: 'succeeded',
+            progress: 1,
+            subject: { type: 'chat_turn', id: turnId, projectId: 'project-white-port' },
+            result: { type: 'chat_turn', chatId, turnId, userMessageId: 'message-user-recovered', artifactId: null },
+            updatedAt: '2026-06-16T05:00:03.000Z',
+          },
+          status: 'completed',
+          latestEventId: 'evt_recovered',
+          messages: [
+            {
+              id: 'message-assistant-recovered',
+              chatId,
+              role: 'assistant',
+              content: 'Восстановленный ответ из snapshot.',
+              parts: [{ type: 'text', text: 'Восстановленный ответ из snapshot.', sequence: 1, status: 'completed' }],
+              references: [],
+              createdAt: '2026-06-16T05:00:03.000Z',
+            },
+          ],
+          artifacts: [],
+          suggestions: [],
+          links: { events: `/chat-turns/${turnId}/events` },
+        });
+      }),
+    ]);
+
+    const input = await screen.findByLabelText('Сообщение');
+    fireEvent.change(input, { target: { value: 'Восстанови истекший поток' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    expect(await screen.findByText('Восстановленный ответ из snapshot.')).toBeTruthy();
+    expect(screen.queryByText('Не удалось восстановить ответ. Обновите чат.')).toBeNull();
+  });
+
+  it('surfaces terminal chat turn failures as stream errors', async () => {
+    renderChat('', {}, [
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId/events`, () => {
+        const failedEvent = {
+          eventId: 'evt_failed',
+          sequence: 1,
+          turnId: 'turn-failed',
+          jobId: 'chat-job-failed',
+          type: 'turn.failed',
+          data: { code: 'provider_failed' },
+        };
+        return new Response(`data: ${JSON.stringify(failedEvent)}\n\n`, { headers: { 'content-type': 'text/event-stream' } });
+      }),
+    ]);
+
+    const input = await screen.findByLabelText('Сообщение');
+    fireEvent.change(input, { target: { value: 'Сломай поток' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    expect((await screen.findAllByText('Не удалось завершить ответ.')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Отправить' })).toBeTruthy();
+  });
+
+  it('opens exact reader targets from chat source cards and search results', async () => {
     const { navigate } = renderChat();
 
     const sourceButtons = await screen.findAllByRole('button', { name: /Открыть/ });
@@ -130,10 +316,10 @@ describe('ChatPage', () => {
     await waitFor(() => expect(document.activeElement).toBe(sourceButtons[0]));
 
     fireEvent.click(screen.getByRole('button', { name: 'Глобальный поиск' }));
-    fireEvent.change(screen.getByLabelText('Запрос поиска'), { target: { value: 'Карта' } });
+    fireEvent.change(screen.getByLabelText('Запрос поиска'), { target: { value: 'Белый порт' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
-    const materialResult = await screen.findByRole('button', { name: /Карта приливов/ });
-    fireEvent.click(materialResult);
+    const searchResult = await screen.findByRole('button', { name: /Белый порт/ });
+    fireEvent.click(searchResult);
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/chat', expect.objectContaining({ reader: 'open' })));
     expect(within(await screen.findByRole('document')).getByText('Мара первой заметила дым с северной пристани.')).toBeTruthy();
@@ -199,9 +385,9 @@ describe('ChatPage', () => {
 
     await screen.findByRole('button', { name: /Пожар в Белом порту/ });
     mswServer.use(
-      http.get(`${mswApiBaseUrl}/projects/:projectId/search`, async () => {
+      http.post(`${mswApiBaseUrl}/projects/:projectId/search`, async () => {
         await new Promise((resolve) => window.setTimeout(resolve, 20));
-        return HttpResponse.json({ query: 'дым', scope: 'all', data: [] });
+        return HttpResponse.json({ query: 'дым', scope: 'all', data: [], snippetPolicy: 'bounded_240_chars' });
       }),
     );
 
@@ -212,7 +398,7 @@ describe('ChatPage', () => {
     expect(screen.getByText('Ищем...')).toBeTruthy();
     expect(await screen.findByText('Ничего не найдено в текущем проекте.')).toBeTruthy();
 
-    mswServer.use(http.get(`${mswApiBaseUrl}/projects/:projectId/search`, () => problem(500, 'Поиск временно недоступен.')));
+    mswServer.use(http.post(`${mswApiBaseUrl}/projects/:projectId/search`, () => problem(500, 'Поиск временно недоступен.')));
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
 
     expect(await screen.findByText('Сервис временно недоступен. Попробуйте снова.')).toBeTruthy();
@@ -243,27 +429,39 @@ describe('ChatPage', () => {
     expect(await screen.findByText('Не удалось подключиться к серверу. Проверьте соединение и попробуйте снова.')).toBeTruthy();
   });
 
+  it('keeps the composer disabled when the selected project has no chats', async () => {
+    renderChat('', {}, [
+      http.get(`${mswApiBaseUrl}/projects/:projectId/chats`, () => HttpResponse.json({ data: [], meta: { hasMore: false, nextCursor: null } })),
+    ]);
+
+    expect((await screen.findAllByText('В проекте пока нет чатов.')).length).toBeGreaterThan(1);
+    expect(screen.queryByText('В этом чате пока нет сообщений.')).toBeNull();
+    expect(screen.getByLabelText('Сообщение')).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Отправить' })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('button', { name: 'Создать чат' })).toBeTruthy();
+  });
+
   it('keeps stream errors recoverable before and during SSE rendering', async () => {
     renderChat();
     await screen.findByRole('button', { name: /Пожар в Белом порту/ });
-    mswServer.use(http.post(`${mswApiBaseUrl}/chats/:chatId/messages`, () => problem(500, 'Stream failed')));
+    mswServer.use(http.post(`${mswApiBaseUrl}/chats/:chatId/turns`, () => problem(500, 'Stream failed')));
 
     const input = await screen.findByLabelText('Сообщение');
     fireEvent.change(input, { target: { value: 'Проверь связь источника' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
-    expect(await screen.findByText('Ответ остановлен')).toBeTruthy();
     expect(await screen.findByText('Сервис временно недоступен. Попробуйте снова.')).toBeTruthy();
+    expect(screen.queryByText('Ответ остановлен')).toBeNull();
     cleanup();
 
     renderChat();
     await screen.findByRole('button', { name: /Пожар в Белом порту/ });
     mswServer.use(
-      http.post(`${mswApiBaseUrl}/chats/:chatId/messages`, () => {
+      http.get(`${mswApiBaseUrl}/chat-turns/:turnId/events`, () => {
         const frames = Array.from({ length: 10 }, (_item, index) => {
-          return `data: ${JSON.stringify({ type: 'reasoning_delta', sequence: index + 1, delta: `stream step ${index}` })}\n\n`;
+          return `data: ${JSON.stringify({ eventId: `evt_${index}`, sequence: index + 1, turnId: 'turn-1', jobId: 'job-1', type: 'job.progress', data: { label: `stream step ${index}` } })}\n\n`;
         });
-        frames.push('data: {"type":"text_delta"\n\n');
+        frames.push('data: {"type":"assistant.delta"\n\n');
         return new Response(frames.join(''), { headers: { 'content-type': 'text/event-stream' } });
       }),
     );
@@ -272,7 +470,7 @@ describe('ChatPage', () => {
     fireEvent.change(nextInput, { target: { value: 'Проверь поток' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
-    expect(await screen.findByText('Ответ остановлен')).toBeTruthy();
+    expect(await screen.findByText('Не удалось завершить ответ.')).toBeTruthy();
     await waitFor(() => expect(screen.getAllByText(/stream step/)).toHaveLength(6));
     expect(screen.queryByText('stream step 0')).toBeNull();
     expect(screen.getByLabelText('Сообщение')).toBeTruthy();
